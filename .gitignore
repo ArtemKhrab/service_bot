@@ -1,0 +1,8 @@
+*.json
+time_slots_managment.py
+token.pickle
+/data
+/.idea
+/__pycache__
+/.handler-saves
+/venv
