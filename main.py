@@ -52,12 +52,31 @@ def callback_handler(call):
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+    elif 'change_role' in call.data:
+        data = call.data.split(' ')
+        user_instance = get_user(call.from_user.id)
+        if bool(data[1]):
+            if user_instance[0].master:
+                to_menu(call)
+                bot.answer_callback_query(call.id, text=" ", show_alert=False)
+                return
+            else:
+                keyboard = buttons.reg_as_master()
+                bot.send_message(call.from_user.id, 'Ви не зареєстровані як майстер. Бажаєте зареєструватися?',
+                             reply_markup=keyboard)
+            return
+        else:
+            set_current_role(call.from_user.id, bool(data[1]))
+            to_menu(call)
+            bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
     elif 'set_placement' in call.data:
         bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
         update_placement(call.from_user.id, data[1])
         if data[2] == 'reg':
             update_master_flag(call.from_user.id)
+            set_current_role(call.from_user.id, True)
             keyboard = buttons.to_menu()
             bot.send_message(call.from_user.id, "Супер! Тепер ви зареєстровані і до вас вже можна записуватись 🥳",
                              reply_markup=keyboard)
@@ -65,25 +84,13 @@ def callback_handler(call):
             edit_profile(call.from_user.id)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
-
     if not flag:
         keyboard = buttons.choose_role_button_reg()
         bot.send_message(call.from_user.id, "Спочатку зареєструйтесь!", reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
-
     if call.data == 'menu':
-        user_data = get_user(call.from_user.id)
-        if user_data[0].master:
-            bot.send_message(call.from_user.id, 'Меню',
-                             reply_markup=buttons.master_menu_1(call.from_user.id))
-            bot.answer_callback_query(call.id, text=" ", show_alert=False)
-            return
-        else:
-            bot.send_message(call.from_user.id, 'Меню',
-                             reply_markup=buttons.client_menu())
-            bot.answer_callback_query(call.id, text=" ", show_alert=False)
-            return
+        to_menu()
     elif call.data == 'menu_1':
         bot.edit_message_reply_markup(call.from_user.id, call.message.message_id,
                                       reply_markup=buttons.master_menu_1(call.from_user.id))
@@ -102,6 +109,7 @@ def callback_handler(call):
                 bot.answer_callback_query(call.id, text=" ", show_alert=False)
                 return
             else:
+                set_current_role(call.from_user.id, False)
                 keyboard = buttons.to_menu()
                 bot.send_message(call.from_user.id, "Супер! Тепер ви зареєстровані 🥳",
                                  reply_markup=keyboard)
@@ -159,24 +167,6 @@ def callback_handler(call):
         show_services(indexes[1], indexes[2], services, call.from_user.id)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
-    elif call.data == 'to_client_menu':
-        keyboard = buttons.client_menu()
-        keyboard.add(buttons.master_back())
-        bot.edit_message_text('Меню', call.from_user.id, call.message.message_id)
-        bot.edit_message_reply_markup(call.from_user.id, call.message.message_id, reply_markup=keyboard)
-        bot.answer_callback_query(call.id, text=" ", show_alert=False)
-        return
-    elif call.data == 'to_master_menu':
-        user_instance = get_user(call.from_user.id)
-        if user_instance[0].master:
-            to_master_menu(call)
-            bot.answer_callback_query(call.id, text=" ", show_alert=False)
-            return
-        else:
-            keyboard = buttons.reg_as_master()
-            bot.send_message(call.from_user.id, 'Ви не зареєстровані як майстер. Бажаєте зареєструватися?',
-                             reply_markup=keyboard)
-            return
     elif call.data == 'reg_as_master':
         master_reg_start(call.message, call.from_user.id)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
@@ -450,7 +440,7 @@ def callback_handler(call):
         services = get_sample_services(call.from_user.id)
         end_index = services.__len__() - 1
         if end_index == -1:
-            to_master_menu(call)
+            to_menu(call)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
         index = 0
@@ -491,7 +481,7 @@ def callback_handler(call):
         certificates = get_certificates(call.from_user.id)
         end_index = certificates.__len__() - 1
         if end_index == -1:
-            to_master_menu(call)
+            to_menu(call)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
         index = 0
@@ -581,9 +571,13 @@ def update_certificate_photo(message, ran, create):
         return
 
 
-def to_master_menu(call):
-    keyboard = buttons.master_menu_1(call.from_user.id)
-    # keyboard.add(buttons.master_back())
+def to_menu(call):
+    user_instance = get_user(call.from_user_id)
+    if user_instance[0].current_user:
+        keyboard = buttons.master_menu_1(call.from_user.id)
+        # keyboard.add(buttons.master_back()) 
+    else:
+        keyboard = buttons.client_menu()
     bot.edit_message_text('Меню', call.from_user.id, call.message.message_id)
     bot.edit_message_reply_markup(call.from_user.id, call.message.message_id, reply_markup=keyboard)
 
@@ -1017,3 +1011,4 @@ if __name__ == '__main__':
         # except Exception as e:
         #     print(e)
         #     time.sleep(10)
+

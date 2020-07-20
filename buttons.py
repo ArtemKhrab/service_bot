@@ -42,10 +42,10 @@ def choose_role_button_reg():
 def choose_role_menu():
     keyboard = types.InlineKeyboardMarkup()
     callback_button = types.InlineKeyboardButton(text="💇🏻‍♂️ Клієнт",
-                                                 callback_data='to_client_menu')
+                                                 callback_data='change_role False')
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="💅🏻 Майстер",
-                                                 callback_data='to_master_menu')
+                                                 callback_data='change_role True')
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="🔄 Назад",
                                                  callback_data='del_message')

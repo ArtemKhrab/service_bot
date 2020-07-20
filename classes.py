@@ -41,6 +41,7 @@ class User(Base):
     details = Column(String(255))
     city_id = Column(Integer, ForeignKey(City.id))
     card = Column(String(40))
+    current_role = Column(Boolean, nullable=False, default=False)
 
 
 class Saved_placement(Base):
