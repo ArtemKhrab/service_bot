@@ -1,0 +1,1 @@
+mysqlsh -uroot -fcreate_db.sql

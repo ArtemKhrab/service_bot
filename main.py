@@ -29,7 +29,7 @@ def callback_handler(call):
         return
     elif 'language' in call.data:
         # data = call.data.split(' ')
-        greetings = ('Привіт, мене зовуть Лола! 💁‍♀️\n\n'
+        greetings = ('Привіт, мене звуть Лола! 💁‍♀️\n\n'
                      '🤖 Я робот і буду виконувати роль твого'
                      ' персонального менеджера. \n\n')
         if flag:
@@ -67,7 +67,8 @@ def callback_handler(call):
         return
 
     if not flag:
-        bot.send_message(call.from_user.id, "Спочатку зареєструйтесь!")
+        keyboard = buttons.choose_role_button_reg()
+        bot.send_message(call.from_user.id, "Спочатку зареєструйтесь!", reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
 
@@ -335,7 +336,7 @@ def callback_handler(call):
     elif 'profile_edit' in call.data:
         data = call.data.split(' ')
         if data[1] == 'name':
-            bot.send_message(call.from_user.id, "Введіть своє ім'я, за яким клієнт зможе вас знайти "
+            bot.send_message(call.from_user.id, "Введіть своє ім'я"
                                                 "(можна латиницею) і натисніть Enter ↩")
             bot.register_next_step_handler(message=call.message, call_id=call.id, callback=edit_name)
         elif data[1] == 'phone':
@@ -999,10 +1000,20 @@ def set_end_time(message, start_time, date):
 bot.enable_save_next_step_handlers(delay=2)
 # bot.load_next_step_handlers()
 
+
+def check_start_ud_data():
+    cities = get_cities()
+    if cities.__len__() < 1:
+        os.system('mysqlsh -uroot -fdata.sql')
+    else:
+        return
+
+
 if __name__ == '__main__':
-    while True:
-        try:
-            bot.polling(none_stop=True)
-        except Exception as e:
-            print(e)
-            time.sleep(10)
+    # while True:
+    #     try:
+    check_start_ud_data()
+    bot.polling(none_stop=True)
+        # except Exception as e:
+        #     print(e)
+        #     time.sleep(10)
