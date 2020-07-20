@@ -12,3 +12,20 @@ insert into bot.service_segment (name)values ('Брови, вії');
 insert into bot.service_segment  (name)values ('Нігтьовий сервіс');
 insert into bot.service_segment  (name)values ('Перукарські послуги');
 
+
+
+-- set default-character-set=utf8mb4;
+-- SET names utf8mb4;
+-- show variables like '%char%';
+-- SET NAMES 'utf8mb4'; SET character_set_connection='utf8mb4';
+
+-- ALTER DATABASE Bot CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+-- ALTER DATABASE bot CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- ALTER TABLE bot.city CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- ALTER TABLE bot.city MODIFY name TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- set character_set_client = utf8mb4;
+-- set character_set_system = utf8mb4;
+-- set character_set_client_handshake = FALSE;
+-- set character_set_server = utf8mb4;
+-- set collation_server = utf8mb4_unicode_ci;
