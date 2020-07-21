@@ -23,6 +23,7 @@ def start(message):
 def callback_handler(call):
     flag = check_user(call.from_user.id)
     if 'registration' in call.data:
+        bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
         registration(call.message, data[1])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
@@ -52,6 +53,7 @@ def callback_handler(call):
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
     elif 'change_role' in call.data:
+        bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
         user_instance = get_user_role(call.from_user.id)
         if data[1] == '1':
@@ -91,6 +93,7 @@ def callback_handler(call):
         return
     if call.data == 'menu':
         to_menu(call)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
     elif call.data == 'menu_1':
         bot.edit_message_reply_markup(call.from_user.id, call.message.message_id,
                                       reply_markup=buttons.master_menu_1(call.from_user.id))
@@ -103,15 +106,16 @@ def callback_handler(call):
         bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
         update_city(call.from_user.id, data[1], data[2])
-        create_user_role(call.from_user.id)
+        city = get_city_by_id(data[1])
+        bot.send_message(call.from_user.id, f'Ви обрали місто: {city}🌆')
         if data[3] == 'reg':
+            create_user_role(call.from_user.id)
             if data[2] == 'master':
                 update_to_master(call.from_user.id)
                 master_reg_start(call.message, call.from_user.id)
                 bot.answer_callback_query(call.id, text=" ", show_alert=False)
                 return
             else:
-                set_current_role(call.from_user.id, False)
                 keyboard = buttons.to_menu()
                 bot.send_message(call.from_user.id, "Супер! Тепер ви зареєстровані 🥳",
                                  reply_markup=keyboard)
@@ -242,9 +246,9 @@ def callback_handler(call):
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
     elif 'check_services' in call.data:
         data = call.data.split(' ')
-        if str(data[1]) == str(call.from_user.id):
-            bot.answer_callback_query(call.id, text="Ви не можете записатися до самого себе!")
-            return
+        # if str(data[1]) == str(call.from_user.id):
+        #     bot.answer_callback_query(call.id, text="Ви не можете записатися до самого себе!")
+        #     return
         keyboard = buttons.service_segments(data[1], False)
         bot.send_message(call.from_user.id, 'Оберіть сегмент послуг 🧚🏻‍',
                          reply_markup=keyboard)
@@ -501,6 +505,46 @@ def callback_handler(call):
         show_certificates(index, end_index, certificates, call.from_user.id)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+    elif 'send_rating' in call.data:
+        data = call.data.split(' ')
+        keyboard = buttons.set_rating_buttons(data[1])
+        bot.send_message(call.from_user.id, 'Оцініть роботу майстра 🤩', reply_markup=keyboard)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
+    elif 'set_rating' in call.data:
+        keyboard = buttons.to_completed_services()
+        bot.delete_message(call.from_user.id, call.message.message_id)
+        data = call.data.split(' ')
+        response = create_rating(master_id=data[2], client_id=call.from_user.id, point=int(data[1]))
+        if response is None:
+            bot.send_message(call.from_user.id, 'Ви вже оцінювали цього майстра!', reply_markup=keyboard)
+        else:
+            bot.send_message(call.from_user.id, 'Дякую за вігук ☺', reply_markup=keyboard)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
+    elif 'send_feedback' in call.data:
+        data = call.data.split(' ')
+        if check_feedback(call.from_user.id, data[1]):
+            bot.send_message(call.from_user.id, 'Напишіть відгук про майстра *повідомлення не повинно містити'
+                                                ' емодзі')
+            bot.register_next_step_handler(call.message, set_feedback, call.from_user.id, data[1], call)
+        else:
+            bot.answer_callback_query(call.id, text="Ви вже написали відгук про цього майстра")
+            return
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
+
+
+def set_feedback(message, user_id, master_id, call):
+    keyboard = buttons.to_completed_services()
+    if message.text is None:
+        bot.send_message(user_id, 'Неправильний формат тексту(')
+        to_menu(call)
+        return
+    else:
+        create_feedback(master_id, user_id, message.text)
+    bot.send_message(call.from_user.id, 'Дякую за вігук ☺', reply_markup=keyboard)
+    return
 
 
 def delete_service_image(service_id, user_id):
@@ -546,6 +590,14 @@ def edit_certificate_description(message, certificate_id):
 
 def edit_certificate_photo(message, certificate_id):
     certificate_instance = get_certificate_by_id(certificate_id)
+    try:
+        photo = get_photo(message)
+    except Exception as ex:
+        print(ex)
+        bot.send_message(message.from_user.id, "Відправте фотографію (можливо Ви її відправили у форматі файлу,"
+                                               " потрібно у форматі фотографії!)")
+        bot.register_next_step_handler(message, edit_certificate_photo)
+        return
     if certificate_instance.__len__() < 1:
         return
     if certificate_instance[0].image is not None:
@@ -556,22 +608,13 @@ def edit_certificate_photo(message, certificate_id):
             if not os.path.exists(data_path + str(message.from_user.id) + '\\certificates\\' +
                                   str(ran) + '.jpg'):
                 break
-    update_certificate_photo(message, ran, False)
+    update_certificate_photo(message, ran, False, photo)
     edit_certificate(certificate_id, message.from_user.id)
 
 
-def update_certificate_photo(message, ran, create):
+def update_certificate_photo(message, ran, create, photo):
     if not os.path.exists(data_path + str(message.from_user.id) + '\\certificates'):
         os.makedirs(data_path + str(message.from_user.id) + '\\certificates')
-    try:
-        photo = get_photo(message)
-    except Exception as ex:
-        print(ex)
-        bot.send_message(message.from_user.id, "Відправте фотографію (можливо Ви її відправили у форматі файлу,"
-                                               " потрібно у форматі фотографії!)")
-        bot.register_next_step_handler(message, set_certificate_photo)
-        return
-
     with open(data_path + str(message.from_user.id) + '\\certificates\\' +
               str(ran) + '.jpg', 'wb') as file:
         file.write(photo)
@@ -605,6 +648,14 @@ def edit_sample_service(service_id, user_id):
 
 def edit_sample_service_photo(message, service_id):
     service_instance = get_sample_service_by_id(service_id)
+    try:
+        photo = get_photo(message)
+    except Exception as ex:
+        print(ex)
+        bot.send_message(message.from_user.id, "Відправте фотографію (можливо Ви її відправили у форматі файлу,"
+                                               " потрібно у форматі фотографії!)")
+        bot.register_next_step_handler(message, edit_sample_service_photo, service_id)
+        return
     if service_instance.__len__() < 1:
         return
     if service_instance[0].image is not None:
@@ -616,21 +667,13 @@ def edit_sample_service_photo(message, service_id):
             if not os.path.exists(data_path + str(message.from_user.id) + '\\services\\' +
                                   str(ran) + '.jpg'):
                 break
-    update_samp_serv_photo(message, service_id, ran)
+    update_samp_serv_photo(message, service_id, ran, photo)
     edit_sample_service(service_id, message.from_user.id)
 
 
-def update_samp_serv_photo(message, service_id, ran):
+def update_samp_serv_photo(message, service_id, ran, photo):
     if not os.path.exists(data_path + str(message.from_user.id) + '\\services'):
         os.makedirs(data_path + str(message.from_user.id) + '\\services')
-    try:
-        photo = get_photo(message)
-    except Exception as ex:
-        print(ex)
-        bot.send_message(message.from_user.id, "Відправте фотографію (можливо Ви її відправили у форматі файлу,"
-                                               " потрібно у форматі фотографії!)")
-        bot.register_next_step_handler(message=message, service_id=service_id, callback=update_samp_serv_photo)
-        return
     with open(data_path + str(message.from_user.id) + '\\services\\' +
               str(ran) + '.jpg', 'wb') as file:
         file.write(photo)
@@ -740,10 +783,10 @@ def show_orders(orders, user_id, master_flag):
         master = get_master(order.master_id)
         prepaid = 'Так' if order.prepaid else 'Ні'
         if not master_flag:
-            if check_rating(order.master_id, order.client_id) and order.done:
-                keyboard.add(buttons.rating_button(order.master_id, order.client_id))
-            if check_feedback(order.master_id, order.client_id) and order.done:
-                keyboard.add(buttons.feedback_button(order.master_id, order.client_id))
+            if check_rating(user_id, order.master_id) and order.done:
+                keyboard.add(buttons.rating_button(order.master_id))
+            if check_feedback(user_id, order.master_id) and order.done:
+                keyboard.add(buttons.feedback_button(order.master_id))
         elif master_flag and not order.done:
             keyboard.add(buttons.mark_as_done(order.id))
         bot.send_message(user_id, f'`Назва послуги:` {str(service[0].name)} \n'
@@ -813,7 +856,7 @@ def set_acc_photo(message, reg):
         print(ex)
         bot.send_message(message.from_user.id, "Відправте фотографію (можливо Ви її відправили у форматі файлу,"
                                                " потрібно у форматі фотографії!)")
-        # bot.register_next_step_handler(message, set_acc_photo)
+        bot.register_next_step_handler(message, set_acc_photo, reg)
         return
     with open(data_path + str(message.from_user.id) + '\\profile\\profile.jpg', 'wb') as file:
         file.write(photo)
@@ -844,7 +887,8 @@ def set_acc_details(message):
 
 
 def show_profile(user_id, role):
-    keyboard = buttons.to_menu()
+    keyboard = buttons.empty_template()
+    keyboard.add(buttons.back_and_delete())
     keyboard.add(buttons.edit_profile(role))
     if role == 'master':
         instance = get_master(user_id)
@@ -882,12 +926,20 @@ def add_certificate(message):
 
 
 def set_certificate_photo(message):
+    try:
+        photo = get_photo(message)
+    except Exception as ex:
+        print(ex)
+        bot.send_message(message.from_user.id, "Відправте фотографію (можливо Ви її відправили у форматі файлу,"
+                                               " потрібно у форматі фотографії!)")
+        bot.register_next_step_handler(message, set_certificate_photo)
+        return
     while True:
         ran = str(message.from_user.id) + '_' + str(random.randint(1000, 9999))
         if not os.path.exists(data_path + str(message.from_user.id) + '\\certificates\\' +
                               str(ran) + '.jpg'):
             break
-    image = update_certificate_photo(message, ran, True)
+    image = update_certificate_photo(message, ran, True, photo)
     bot.send_message(message.chat.id, 'Напишіть опис до фото:')
     bot.register_next_step_handler(message=message, image=image, callback=set_certificate_details)
 
@@ -921,12 +973,20 @@ def add_sample_service(message):
 
 
 def set_service_photo(message, service_id):
+    try:
+        photo = get_photo(message)
+    except Exception as ex:
+        print(ex)
+        bot.send_message(message.from_user.id, "Відправте фотографію (можливо Ви її відправили у форматі файлу,"
+                                               " потрібно у форматі фотографії!)")
+        bot.register_next_step_handler(message, set_service_photo, service_id)
+        return
     while True:
         ran = str(message.from_user.id) + '_' + str(random.randint(1000, 9999))
         if not os.path.exists(data_path + str(message.from_user.id) + '\\services\\' +
                               str(ran) + '.jpg'):
             break
-    update_samp_serv_photo(message, service_id, ran)
+    update_samp_serv_photo(message, service_id, ran, photo)
     keyboard = buttons.to_menu()
     bot.send_message(message.from_user.id, 'Додано!', reply_markup=keyboard)
 
@@ -993,7 +1053,7 @@ def set_end_time(message, start_time, date):
     if not re.match(r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$', message.text):
         bot.send_message(message.chat.id, 'Невірний формат часу, спробуйте ще раз. '
                                           '(Приклад: 9:00, 14:20)')
-        bot.register_next_step_handler(message=message, date=date, callback=set_end_time)
+        bot.register_next_step_handler(message=message, start_time=start_time, date=date, callback=set_end_time)
         return
     try:
         create_time_slot(user_id=message.from_user.id, start_time=start_time,
@@ -1007,8 +1067,6 @@ def set_end_time(message, start_time, date):
 
 
 bot.enable_save_next_step_handlers(delay=2)
-
-
 # bot.load_next_step_handlers()
 
 

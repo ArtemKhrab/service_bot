@@ -123,6 +123,7 @@ class Feedback(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     client_id = Column(String(25), ForeignKey(Client.user_id))
+    client_id_master_acc = Column(String(25), ForeignKey(Master.user_id))
     master_id = Column(String(25), ForeignKey(Master.user_id))
     feedback = Column(String(512), nullable=False)
 
@@ -172,6 +173,7 @@ class Order(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     time_slot_id = Column(Integer, ForeignKey(Time_slot.id))
     client_id = Column(String(25), ForeignKey(Client.user_id))
+    client_id_master_acc = Column(String(25), ForeignKey(Master.user_id))
     master_id = Column(String(25), ForeignKey(Master.user_id))
     service_id = Column(Integer, ForeignKey(Service_type.id))
     prepaid = Column(Boolean, nullable=False, default=False)
@@ -184,6 +186,7 @@ class Rating(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     client_id = Column(String(25), ForeignKey(Client.user_id))
+    client_id_master_acc = Column(String(25), ForeignKey(Master.user_id))
     master_id = Column(String(25), ForeignKey(Master.user_id))
     points = Column(Integer)
 

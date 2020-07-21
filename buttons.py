@@ -1,9 +1,10 @@
 from telebot import types
 import datetime
+
 import methods
 
 stickers = {'Брови, вії': '👁', 'Нігтьовий сервіс':
-            '💅🏻', 'Перукарські послуги': '✂'}
+    '💅🏻', 'Перукарські послуги': '✂'}
 service_eyes = ['Корекція брів', 'Фарбування брів',
                 'Фарбування вій', 'Нарощування вій',
                 'Завивка вій', 'Ламінування вій',
@@ -13,6 +14,10 @@ service_eyes = ['Корекція брів', 'Фарбування брів',
 service_haircut = []
 
 service_nails = []
+
+
+def back_and_delete():
+    return types.InlineKeyboardButton(text="Повернутися", callback_data='del_message')
 
 
 def to_menu():
@@ -247,7 +252,7 @@ def moving_certificates_buttons(index, end_index, data_id, master_id, user_id):
     callback_button = types.InlineKeyboardButton(text="Меню",
                                                  callback_data='menu')
     keyboard.add(callback_button)
-    callback_button = types.InlineKeyboardButton(text="Повернутись до минулої операції",
+    callback_button = types.InlineKeyboardButton(text="Повернутись",
                                                  callback_data='del_message')
     keyboard.add(callback_button)
     if int(index) < int(end_index):
@@ -272,7 +277,7 @@ def moving_services_buttons(index, end_index, data_id, master_id, user_id):
     callback_button = types.InlineKeyboardButton(text="Меню",
                                                  callback_data='menu')
     keyboard.add(callback_button)
-    callback_button = types.InlineKeyboardButton(text="Повернутись до минулої операції",
+    callback_button = types.InlineKeyboardButton(text=" Повернутись",
                                                  callback_data='del_message')
     keyboard.add(callback_button)
     if int(index) < int(end_index):
@@ -342,6 +347,7 @@ def date_buttons():
         callback_button_3 = types.InlineKeyboardButton(text=str(date_creation_3),
                                                        callback_data='date_create ' + str(date_creation_3))
         keyboard.add(callback_button_1, callback_button_2, callback_button_3)
+    keyboard.add(back_and_delete())
     return keyboard
 
 
@@ -455,7 +461,7 @@ def get_services(master_id, user_id, segment):
         keyboard.add(types.InlineKeyboardButton(text='Редагувати',
                                                 callback_data='edit_service ' + segment),
                      types.InlineKeyboardButton(text="⬅ Повернутись",
-                                                callback_data='menu'))
+                                                callback_data='del_message'))
     else:
         text = 'Доступні послуги'
         for service in services:
@@ -502,16 +508,25 @@ def edit_service_buttons(service_id, segment, user_id):
     return keyboard
 
 
-def feedback_button(user_id, master_id):
+def feedback_button(master_id):
     return types.InlineKeyboardButton(text="Залишити відгук",
-                                      callback_data='send_feedback ' + str(user_id) +
-                                                    ' ' + str(master_id))
+                                      callback_data='send_feedback ' + str(master_id))
 
 
-def rating_button(user_id, master_id):
+def rating_button(master_id):
     return types.InlineKeyboardButton(text="Оцінити майстра",
-                                      callback_data='send_rating ' + str(user_id) +
-                                                    ' ' + str(master_id))
+                                      callback_data='send_rating ' + str(master_id))
+
+
+def set_rating_buttons(master_id):
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(
+        types.InlineKeyboardButton(text='1', callback_data='set_rating 1 ' + str(master_id)),
+        types.InlineKeyboardButton(text='2', callback_data='set_rating 2 ' + str(master_id)),
+        types.InlineKeyboardButton(text='3', callback_data='set_rating 3 ' + str(master_id)),
+        types.InlineKeyboardButton(text='4', callback_data='set_rating 4 ' + str(master_id)),
+        types.InlineKeyboardButton(text='5', callback_data='set_rating 5 ' + str(master_id)))
+    return keyboard
 
 
 def mark_as_done(order_id):
@@ -585,4 +600,12 @@ def reg_as_master():
     callback_button2 = types.InlineKeyboardButton(text="Ні❌",
                                                   callback_data='del_message')
     keyboard.add(callback_button1, callback_button2)
+    return keyboard
+
+
+def to_completed_services():
+    keyboard = types.InlineKeyboardMarkup()
+    callback_button = types.InlineKeyboardButton(text="Повернутись",
+                                                 callback_data='check_order_client 1')
+    keyboard.add(callback_button)
     return keyboard

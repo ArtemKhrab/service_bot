@@ -255,8 +255,12 @@ def get_master_by_id(master_id):
 
 
 def create_order(time_slot_id, client_id, master_id, service_id):
-    instance = Order(time_slot_id=time_slot_id, client_id=client_id,
-                     master_id=master_id, service_id=service_id)
+    if get_user_role(client_id):
+        instance = Order(time_slot_id=time_slot_id, client_id_master_acc=client_id,
+                         master_id=master_id, service_id=service_id)
+    else:
+        instance = Order(time_slot_id=time_slot_id, client_id=client_id,
+                         master_id=master_id, service_id=service_id)
     session.add(instance)
     session.commit()
 
@@ -278,7 +282,12 @@ def update_order_as_done(order_id):
 
 
 def get_orders_for_client(client_id, done):
-    return session.query(Order).filter(Order.client_id == client_id, Order.done == done, Order.canceled == '0').all()
+    if get_user_role(client_id):
+        return session.query(Order).filter(Order.client_id_master_acc == client_id, Order.done == done,
+                                           Order.canceled == '0').all()
+    else:
+        return session.query(Order).filter(Order.client_id == client_id,
+                                           Order.done == done, Order.canceled == '0').all()
 
 
 def get_time_slot_by_id(time_slot_id):
@@ -286,8 +295,12 @@ def get_time_slot_by_id(time_slot_id):
 
 
 def check_rating(user_id, master_id):
-    rating = session.query(Rating).filter(Rating.master_id == master_id,
-                                          Rating.client_id == user_id).all()
+    if get_user_role(user_id):
+        rating = session.query(Rating).filter(Rating.master_id == master_id,
+                                              Rating.client_id_master_acc == user_id).all()
+    else:
+        rating = session.query(Rating).filter(Rating.master_id == master_id,
+                                              Rating.client_id == user_id).all()
     if rating.__len__() > 0:
         return False
     else:
@@ -295,8 +308,12 @@ def check_rating(user_id, master_id):
 
 
 def check_feedback(user_id, master_id):
-    feedback = session.query(Feedback).filter(Feedback.master_id == master_id,
-                                              Feedback.client_id == user_id).all()
+    if get_user_role(user_id):
+        feedback = session.query(Feedback).filter(Feedback.master_id == master_id,
+                                                  Feedback.client_id_master_acc == user_id).all()
+    else:
+        feedback = session.query(Feedback).filter(Feedback.master_id == master_id,
+                                                  Feedback.client_id == user_id).all()
     if feedback.__len__() > 0:
         return False
     else:
@@ -304,15 +321,29 @@ def check_feedback(user_id, master_id):
 
 
 def create_rating(master_id, client_id, point):
-    instance = Rating(master_id=master_id, client_id=client_id, points=point)
-    session.add(instance)
-    session.commit()
+    if check_rating(master_id=master_id, user_id=client_id):
+        if get_user_role(client_id):
+            instance = Rating(master_id=master_id, client_id_master_acc=client_id, points=point)
+        else:
+            instance = Rating(master_id=master_id, client_id=client_id, points=point)
+        session.add(instance)
+        session.commit()
+        return True
+    else:
+        return None
 
 
 def create_feedback(master_id, client_id, feedback):
-    instance = Feedback(master_id=master_id, client_id=client_id, feedback=feedback)
-    session.add(instance)
-    session.commit()
+    if check_feedback(master_id=master_id, user_id=client_id):
+        if get_user_role(client_id):
+            instance = Feedback(master_id=master_id, client_id_master_acc=client_id, feedback=feedback)
+        else:
+            instance = Feedback(master_id=master_id, client_id=client_id, feedback=feedback)
+        session.add(instance)
+        session.commit()
+        return True
+    else:
+        return None
 
 
 def get_service_by_id(service_id):
@@ -391,7 +422,6 @@ def get_certificate_by_id(certificate_id):
 
 
 def set_current_role(user_id, role):
-    print(role)
     session.query(Master).filter(Master.user_id == user_id). \
         update({Master.cur_role: role}, synchronize_session=False)
     session.commit()
@@ -402,15 +432,21 @@ def create_user_role(tg_id):
     session.add(instance)
     session.commit()
 
+
 def update_to_master(tg_id):
     session.query(User_role).filter(User_role.id == tg_id). \
         update({User_role.master: True}, synchronize_session=False)
     session.commit()
 
+
 def get_user_role(tg_id):
     response = session.query(User_role).filter_by(id=tg_id).all()
     return response[0].master
 
+
+def get_city_by_id(city_id):
+    city = session.query(City).filter_by(id=city_id).all()
+    return city[0].name
 
 # if __name__ == '__main__':
 #     data = session.query(Service_type.name).filter(Service_type.master_id == '405423146',
