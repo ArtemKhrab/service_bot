@@ -11,4 +11,3 @@ insert into bot.placement (name, latitude, longitude, address, city_id) values (
 insert into bot.service_segment (name)values ('Брови, вії');
 insert into bot.service_segment  (name)values ('Нігтьовий сервіс');
 insert into bot.service_segment  (name)values ('Перукарські послуги');
-
