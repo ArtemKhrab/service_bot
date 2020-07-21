@@ -1,9 +1,13 @@
 from classes import *
 
+
 def check_user(tg_id):
-    response = session.query(User).filter_by(user_id=tg_id)
-    for row in response:
-        if row:
+    response = session.query(Client).filter_by(user_id=tg_id).all()
+    if not response.__len__() < 1:
+        return True
+    else:
+        response = session.query(Master).filter_by(user_id=tg_id).all()
+        if not response.__len__() < 1:
             return True
         else:
             return False
@@ -21,62 +25,106 @@ def get_point(user_id):
     return round(point / counter, 0)
 
 
-def get_user(tg_id):
-    response = session.query(User).filter_by(user_id=tg_id)
+def get_client(tg_id):
+    clients = session.query(Client).filter_by(user_id=tg_id)
     user_instance = []
-    for row in response:
+    for row in clients:
         user_instance = row
+    response = session.query(City).filter_by(id=user_instance.city_id)
+    city = 'Н/Д'
+    for row in response:
+        city = row.name
+
+    return [user_instance, city]
+
+
+def get_master(tg_id):
+    masters = session.query(Master).filter_by(user_id=tg_id)
+    user_instance = []
+    for row in masters:
+        user_instance = row
+    response = session.query(City).filter_by(id=user_instance.city_id)
+    city = 'Н/Д'
+    for row in response:
+        city = row.name
     point = get_point(tg_id)
     response = session.query(Placement).filter_by(id=user_instance.placement_id)
     placement = 'Н/Д'
     for row in response:
         placement = row.name
-    response = session.query(City).filter_by(id=user_instance.city_id)
-    city = 'Н/Д'
-    for row in response:
-        city = row.name
     return [user_instance, point, placement, city]
 
 
-def create_user(user_id, name, username):
-    instance = User(name=name, user_id=user_id, username=username)
+def create_user(user_id, name, username, role):
+    if role == 'client':
+        instance = Client(name=name, user_id=user_id, username=username)
+    elif role == 'master':
+        instance = Master(name=name, user_id=user_id, username=username)
+    else:
+        return
     session.add(instance)
     session.commit()
+    return
 
 
-def update_name(tg_id, name):
-    session.query(User).filter(User.user_id == tg_id). \
-        update({User.name: name}, synchronize_session=False)
+def update_name(tg_id, name, role):
+    if role == 'client':
+        session.query(Client).filter(Client.user_id == tg_id). \
+            update({Client.name: name}, synchronize_session=False)
+    elif role == 'master':
+        session.query(Master).filter(Master.user_id == tg_id). \
+            update({Master.name: name}, synchronize_session=False)
     session.commit()
+    return
 
 
-def update_user_name(tg_id, username):
-    session.query(User).filter(User.user_id == tg_id). \
-        update({User.username: username}, synchronize_session=False)
+def update_user_name(tg_id, username, role):
+    if role == 'client':
+        session.query(Client).filter(Client.user_id == tg_id). \
+            update({Client.username: username}, synchronize_session=False)
+    elif role == 'master':
+        session.query(Master).filter(Master.user_id == tg_id). \
+            update({Master.username: username}, synchronize_session=False)
     session.commit()
+    return
 
 
-def update_telephone(tg_id, telephone):
-    session.query(User).filter(User.user_id == tg_id). \
-        update({User.telephone: telephone}, synchronize_session=False)
+def update_telephone(tg_id, telephone, role):
+    if role == 'client':
+        session.query(Client).filter(Client.user_id == tg_id). \
+            update({Client.telephone: telephone}, synchronize_session=False)
+    elif role == 'master':
+        session.query(Master).filter(Master.user_id == tg_id). \
+            update({Master.telephone: telephone}, synchronize_session=False)
     session.commit()
+    return
 
 
-def update_email(tg_id, email):
-    session.query(User).filter(User.user_id == tg_id). \
-        update({User.email: email}, synchronize_session=False)
+def update_email(tg_id, email, role):
+    if role == 'client':
+        session.query(Client).filter(Client.user_id == tg_id). \
+            update({Client.email: email}, synchronize_session=False)
+    elif role == 'master':
+        session.query(Master).filter(Master.user_id == tg_id). \
+            update({Master.email: email}, synchronize_session=False)
     session.commit()
+    return
 
 
-def update_city(tg_id, city_id):
-    session.query(User).filter(User.user_id == tg_id). \
-        update({User.city_id: city_id}, synchronize_session=False)
+def update_city(tg_id, city_id, role):
+    if role == 'client':
+        session.query(Client).filter(Client.user_id == tg_id). \
+            update({Client.city_id: city_id}, synchronize_session=False)
+    elif role == 'master':
+        session.query(Master).filter(Master.user_id == tg_id). \
+            update({Master.city_id: city_id}, synchronize_session=False)
     session.commit()
+    return
 
 
 def update_acc_photo(tg_id):
-    session.query(User).filter(User.user_id == tg_id). \
-        update({User.image: True}, synchronize_session=False)
+    session.query(Master).filter(Master.user_id == tg_id). \
+        update({Master.image: True}, synchronize_session=False)
     session.commit()
 
 
@@ -93,26 +141,26 @@ def update_certificate_details(tg_id, image, description):
 
 
 def update_acc_details(tg_id, details):
-    session.query(User).filter(User.user_id == tg_id). \
-        update({User.details: details}, synchronize_session=False)
+    session.query(Master).filter(Master.user_id == tg_id). \
+        update({Master.details: details}, synchronize_session=False)
     session.commit()
 
 
 def update_placement(tg_id, placement_id):
-    session.query(User).filter(User.user_id == tg_id). \
-        update({User.placement_id: placement_id}, synchronize_session=False)
+    session.query(Master).filter(Master.user_id == tg_id). \
+        update({Master.placement_id: placement_id}, synchronize_session=False)
     session.commit()
 
 
 def update_master_flag(tg_id):
-    session.query(User).filter(User.user_id == tg_id). \
-        update({User.master: True}, synchronize_session=False)
+    session.query(User_role).filter(User_role.id == tg_id). \
+        update({User_role.master: True}, synchronize_session=False)
     session.commit()
 
 
 def update_card(tg_id, card):
-    session.query(User).filter(User.user_id == tg_id). \
-        update({User.card: card}, synchronize_session=False)
+    session.query(Master).filter(Master.user_id == tg_id). \
+        update({Master.card: card}, synchronize_session=False)
     session.commit()
 
 
@@ -154,7 +202,7 @@ def create_time_slot(user_id, start_time, end_time, date):
 
 
 def get_masters(placement_id):
-    return session.query(User).filter(User.placement_id == placement_id, User.master).all()
+    return session.query(Master).filter(Master.placement_id == placement_id).all()
 
 
 def get_time_slots(user_id):
@@ -162,14 +210,21 @@ def get_time_slots(user_id):
 
 
 def save_master(master_id, user_id):
-    instance = Saved_masters(master_id=master_id, client_id=user_id)
+    if get_user_role(user_id):
+        instance = Saved_masters(master_id=master_id, client_id_master_acc=user_id)
+    else:
+        instance = Saved_masters(master_id=master_id, client_id=user_id)
     session.add(instance)
     session.commit()
 
 
 def check_saved_masters(master_id, user_id):
-    masters = session.query(Saved_masters).filter(Saved_masters.master_id == master_id,
-                                                  Saved_masters.client_id == user_id).all()
+    if get_user_role(user_id):
+        masters = session.query(Saved_masters).filter(Saved_masters.master_id == master_id,
+                                                      Saved_masters.client_id_master_acc == user_id).all()
+    else:
+        masters = session.query(Saved_masters).filter(Saved_masters.master_id == master_id,
+                                                      Saved_masters.client_id == user_id).all()
     if masters.__len__() > 0:
         return False
     else:
@@ -177,7 +232,10 @@ def check_saved_masters(master_id, user_id):
 
 
 def get_saved_masters(user_id):
-    return session.query(Saved_masters).filter(Saved_masters.client_id == user_id).all()
+    if get_user_role(user_id):
+        return session.query(Saved_masters).filter(Saved_masters.client_id_master_acc == user_id).all()
+    else:
+        return session.query(Saved_masters).filter(Saved_masters.client_id == user_id).all()
 
 
 def create_service(tg_id, service_name, segment):
@@ -193,7 +251,7 @@ def get_services(tg_id, segment):
 
 
 def get_master_by_id(master_id):
-    return session.query(User).filter(User.user_id == master_id).all()
+    return session.query(Master).filter(Master.user_id == master_id).all()
 
 
 def create_order(time_slot_id, client_id, master_id, service_id):
@@ -287,7 +345,6 @@ def update_service_time_cost(service_id, time_cost):
 
 
 def delete_service(service_id):
-    print(service_id)
     session.query(Service_type).filter(Service_type.id == service_id). \
         delete()
     session.commit()
@@ -334,9 +391,25 @@ def get_certificate_by_id(certificate_id):
 
 
 def set_current_role(user_id, role):
-    session.query(User).filter(User.user_id == user_id). \
-        update({User.current_role: role}, synchronize_session=False)
+    print(role)
+    session.query(Master).filter(Master.user_id == user_id). \
+        update({Master.cur_role: role}, synchronize_session=False)
     session.commit()
+
+
+def create_user_role(tg_id):
+    instance = User_role(id=tg_id)
+    session.add(instance)
+    session.commit()
+
+def update_to_master(tg_id):
+    session.query(User_role).filter(User_role.id == tg_id). \
+        update({User_role.master: True}, synchronize_session=False)
+    session.commit()
+
+def get_user_role(tg_id):
+    response = session.query(User_role).filter_by(id=tg_id).all()
+    return response[0].master
 
 
 # if __name__ == '__main__':

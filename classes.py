@@ -26,8 +26,45 @@ class Placement(Base):
     city_id = Column(Integer, ForeignKey(City.id))
 
 
-class User(Base):
-    __tablename__ = 'user'
+# class User(Base):
+#     __tablename__ = 'user'
+#
+#     id = Column(Integer, primary_key=True, autoincrement=True)
+#     name = Column(String(50), nullable=False)
+#     user_id = Column(String(25), unique=True)
+#     telephone = Column(String(25))
+#     username = Column(String(40))
+#     email = Column(String(30))
+#     city_id = Column(Integer, ForeignKey(City.id))
+#
+#
+# class Master(User):
+#     __tablename__ = 'master'
+#
+#     id = Column(Integer, ForeignKey(User.id), primary_key=True)
+#     placement_id = Column(Integer, ForeignKey(Placement.id))
+#     image = Column(Boolean, default=False)
+#     details = Column(String(255))
+#     card = Column(String(40))
+#     cur_role = Column(Boolean, default=False)
+#
+#     __mapper_args__ = {
+#         'polymorphic_identity': 'master',
+#     }
+#
+#
+# class Client(User):
+#     __tablename__ = 'client'
+#
+#     id = Column(Integer, ForeignKey(User.id), primary_key=True)
+#
+#     __mapper_args__ = {
+#         'polymorphic_identity': 'client',
+#     }
+
+
+class Client(Base):
+    __tablename__ = 'client'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(50), nullable=False)
@@ -38,29 +75,30 @@ class User(Base):
     city_id = Column(Integer, ForeignKey(City.id))
 
 
-class Master(User):
+class Master(Base):
     __tablename__ = 'master'
 
-    id = Column(Integer, ForeignKey(User.id), primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(50), nullable=False)
+    user_id = Column(String(25), unique=True)
+    telephone = Column(String(25))
+    username = Column(String(40))
+    email = Column(String(30))
+    city_id = Column(Integer, ForeignKey(City.id))
     placement_id = Column(Integer, ForeignKey(Placement.id))
     image = Column(Boolean, default=False)
     details = Column(String(255))
     card = Column(String(40))
-    cur_role = Column(Boolean, default=False)
-
-    __mapper_args__ = {
-        'polymorphic_identity': 'master',
-    }
+    cur_role = Column(Boolean, default=True)
 
 
-class Client(User):
-    __tablename__ = 'client'
+class User_role(Base):
+    __tablename__ = 'user_role'
 
-    id = Column(Integer, ForeignKey(User.id), primary_key=True)
-
-    __mapper_args__ = {
-        'polymorphic_identity': 'client',
-    }
+    id = Column(String(25), primary_key=True)
+    master = Column(Boolean, default=False)
+    client_admin = Column(Boolean, default=False)
+    master_admin = Column(Boolean, default=False)
 
 
 class Saved_placement(Base):
@@ -68,14 +106,14 @@ class Saved_placement(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     placement_id = Column(Integer, ForeignKey(Placement.id))
-    user_id = Column(String(25), ForeignKey(User.user_id))
+    user_id = Column(String(25), ForeignKey(Client.user_id))
 
 
 class Media(Base):
     __tablename__ = 'media'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(String(25), ForeignKey(User.user_id))
+    user_id = Column(String(25), ForeignKey(Master.user_id))
     image = Column(String(50), nullable=False)
     description = Column(String(100))
 
@@ -84,8 +122,8 @@ class Feedback(Base):
     __tablename__ = 'feedback'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    client_id = Column(String(25), ForeignKey(User.user_id))
-    master_id = Column(String(25), ForeignKey(User.user_id))
+    client_id = Column(String(25), ForeignKey(Client.user_id))
+    master_id = Column(String(25), ForeignKey(Master.user_id))
     feedback = Column(String(512), nullable=False)
 
 
@@ -101,7 +139,7 @@ class Service_type(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(30), nullable=False)
-    master_id = Column(String(25), ForeignKey(User.user_id))
+    master_id = Column(String(25), ForeignKey(Master.user_id))
     segment_id = Column(Integer, ForeignKey(Service_segment.id))
     money_cost = Column(String(6))
     time_cost = Column(String(5))
@@ -113,7 +151,7 @@ class Services(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(128), nullable=False)
     image = Column(String(50))
-    master_id = Column(String(25), ForeignKey(User.user_id))
+    master_id = Column(String(25), ForeignKey(Master.user_id))
     money_cost = Column(String(5), default='0')
 
 
@@ -123,7 +161,7 @@ class Time_slot(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
-    master_id = Column(String(25), ForeignKey(User.user_id))
+    master_id = Column(String(25), ForeignKey(Master.user_id))
     date = Column(Date, nullable=False)
     ordered = Column(Boolean, default=False)
 
@@ -133,8 +171,8 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     time_slot_id = Column(Integer, ForeignKey(Time_slot.id))
-    client_id = Column(String(25), ForeignKey(User.user_id))
-    master_id = Column(String(25), ForeignKey(User.user_id))
+    client_id = Column(String(25), ForeignKey(Client.user_id))
+    master_id = Column(String(25), ForeignKey(Master.user_id))
     service_id = Column(Integer, ForeignKey(Service_type.id))
     prepaid = Column(Boolean, nullable=False, default=False)
     done = Column(Boolean, nullable=False, default=False)
@@ -145,8 +183,8 @@ class Rating(Base):
     __tablename__ = 'rating'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    client_id = Column(String(25), ForeignKey(User.user_id))
-    master_id = Column(String(25), ForeignKey(User.user_id))
+    client_id = Column(String(25), ForeignKey(Client.user_id))
+    master_id = Column(String(25), ForeignKey(Master.user_id))
     points = Column(Integer)
 
 
@@ -154,8 +192,9 @@ class Saved_masters(Base):
     __tablename__ = 'saved_masters'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    client_id = Column(String(25), ForeignKey(User.user_id))
-    master_id = Column(String(25), ForeignKey(User.user_id))
+    client_id = Column(String(25), ForeignKey(Client.user_id))
+    client_id_master_acc = Column(String(25), ForeignKey(Master.user_id))
+    master_id = Column(String(25), ForeignKey(Master.user_id))
 
 
 Base.metadata.create_all(engine)

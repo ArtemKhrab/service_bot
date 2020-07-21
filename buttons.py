@@ -42,10 +42,10 @@ def choose_role_button_reg():
 def choose_role_menu():
     keyboard = types.InlineKeyboardMarkup()
     callback_button = types.InlineKeyboardButton(text="💇🏻‍♂️ Клієнт",
-                                                 callback_data='change_role False')
+                                                 callback_data='change_role 0')
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="💅🏻 Майстер",
-                                                 callback_data='change_role True')
+                                                 callback_data='change_role 1')
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="🔄 Назад",
                                                  callback_data='del_message')
@@ -85,10 +85,10 @@ def choose_language_buttons():
     return keyboard
 
 
-def client_menu():
+def client_menu(role):
     keyboard = types.InlineKeyboardMarkup()
     callback_button = types.InlineKeyboardButton(text="Записатись на процедуру",
-                                                 callback_data='order_1')
+                                                 callback_data=f'order_1 {role}')
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Улюблені майстри",
                                                  callback_data='saved_masters')
@@ -233,9 +233,9 @@ def del_button():
     return types.ReplyKeyboardRemove()
 
 
-def edit_profile():
+def edit_profile(role):
     return types.InlineKeyboardButton(text="Редагувати",
-                                      callback_data='edit_profile')
+                                      callback_data=f'edit_profile {role}')
 
 
 def moving_certificates_buttons(index, end_index, data_id, master_id, user_id):
@@ -379,7 +379,7 @@ def moving_masters_buttons(index, end_index, master_id, placement_id):
                                                  callback_data='add_to_favorite' + ' ' + str(master_id))
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Обрати послугу",
-                                                 callback_data='check_service' + ' ' + str(master_id))
+                                                 callback_data='check_services' + ' ' + str(master_id))
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Меню",
                                                  callback_data='menu')
@@ -430,9 +430,9 @@ def saved_masters(user_id):
     if masters.__len__() < 1:
         return None
     for master in masters:
-        user = methods.get_user(master.master_id)
+        user = methods.get_master(master.master_id)
         callback_button = types.InlineKeyboardButton(text=user[0].name,
-                                                     callback_data='saved_masters' + ' ' + str(user[0].user_id))
+                                                     callback_data='sav_masters' + ' ' + str(user[0].user_id))
         keyboard.add(callback_button)
     return keyboard
 
@@ -545,21 +545,21 @@ def add_more_button(segment):
     return types.InlineKeyboardButton(text='🆕 Додати ще', callback_data='service_segment ' + str(segment))
 
 
-def edit_profile_buttons(master):
+def edit_profile_buttons(role):
     keyboard = types.InlineKeyboardMarkup()
     callback_button = types.InlineKeyboardButton(text="Ім'я",
-                                                 callback_data='profile_edit name')
+                                                 callback_data=f'profile_edit name {role}')
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Телефон",
-                                                 callback_data='profile_edit phone')
+                                                 callback_data=f'profile_edit phone {role}')
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Посилання в телеграмі",
-                                                 callback_data='profile_edit tg_link')
+                                                 callback_data=f'profile_edit tg_link {role}')
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Місто",
-                                                 callback_data='profile_edit edit_city')
+                                                 callback_data=f'profile_edit edit_city {role}')
     keyboard.add(callback_button)
-    if master:
+    if role == 'master':
         callback_button = types.InlineKeyboardButton(text="Номер картки",
                                                      callback_data='profile_edit card')
         keyboard.add(callback_button)

@@ -5,7 +5,7 @@ from methods import *
 import os
 import telebot
 import base64
-import time
+# import time
 
 from config import token
 
@@ -28,7 +28,6 @@ def callback_handler(call):
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
     elif 'language' in call.data:
-        # data = call.data.split(' ')
         greetings = ('Привіт, мене звуть Лола! 💁‍♀️\n\n'
                      '🤖 Я робот і буду виконувати роль твого'
                      ' персонального менеджера. \n\n')
@@ -54,19 +53,20 @@ def callback_handler(call):
         return
     elif 'change_role' in call.data:
         data = call.data.split(' ')
-        user_instance = get_user(call.from_user.id)
-        if bool(data[1]):
-            if user_instance[0].master:
+        user_instance = get_user_role(call.from_user.id)
+        if data[1] == '1':
+            if user_instance:
+                set_current_role(call.from_user.id, 1)
                 to_menu(call)
                 bot.answer_callback_query(call.id, text=" ", show_alert=False)
                 return
             else:
                 keyboard = buttons.reg_as_master()
                 bot.send_message(call.from_user.id, 'Ви не зареєстровані як майстер. Бажаєте зареєструватися?',
-                             reply_markup=keyboard)
+                                 reply_markup=keyboard)
             return
         else:
-            set_current_role(call.from_user.id, bool(data[1]))
+            set_current_role(call.from_user.id, 0)
             to_menu(call)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
@@ -81,7 +81,7 @@ def callback_handler(call):
             bot.send_message(call.from_user.id, "Супер! Тепер ви зареєстровані і до вас вже можна записуватись 🥳",
                              reply_markup=keyboard)
         else:
-            edit_profile(call.from_user.id)
+            edit_profile(call.from_user.id, 'master')
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
     if not flag:
@@ -90,7 +90,7 @@ def callback_handler(call):
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
     if call.data == 'menu':
-        to_menu()
+        to_menu(call)
     elif call.data == 'menu_1':
         bot.edit_message_reply_markup(call.from_user.id, call.message.message_id,
                                       reply_markup=buttons.master_menu_1(call.from_user.id))
@@ -102,9 +102,11 @@ def callback_handler(call):
     elif 'set_city' in call.data:
         bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
-        update_city(call.from_user.id, data[1])
+        update_city(call.from_user.id, data[1], data[2])
+        create_user_role(call.from_user.id)
         if data[3] == 'reg':
             if data[2] == 'master':
+                update_to_master(call.from_user.id)
                 master_reg_start(call.message, call.from_user.id)
                 bot.answer_callback_query(call.id, text=" ", show_alert=False)
                 return
@@ -116,11 +118,14 @@ def callback_handler(call):
                 bot.answer_callback_query(call.id, text=" ", show_alert=False)
                 return
         else:
-            edit_profile(call.from_user.id)
+            edit_profile(call.from_user.id, data[2])
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
     elif call.data == 'check_profile':
-        show_profile(call.from_user.id)
+        if get_user_role(call.from_user.id):
+            show_profile(call.from_user.id, 'master')
+        else:
+            show_profile(call.from_user.id, 'client')
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
     elif call.data == 'add_media':
@@ -181,8 +186,12 @@ def callback_handler(call):
         bot.register_next_step_handler(message=call.message, date=data[1], callback=set_start_time)
         bot.answer_callback_query(call.id, text=' ', show_alert=False)
         return
-    elif call.data == 'order_1':
-        user_instance = get_user(call.from_user.id)
+    elif 'order_1' in call.data:
+        data = call.data.split(' ')
+        if data == 'client':
+            user_instance = get_client(call.from_user.id)
+        else:
+            user_instance = get_master(call.from_user.id)
         keyboard = buttons.order_placement_buttons(user_instance[0].city_id)
         bot.send_message(call.from_user.id, keyboard[0],
                          reply_markup=keyboard[1])
@@ -233,6 +242,9 @@ def callback_handler(call):
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
     elif 'check_services' in call.data:
         data = call.data.split(' ')
+        if str(data[1]) == str(call.from_user.id):
+            bot.answer_callback_query(call.id, text="Ви не можете записатися до самого себе!")
+            return
         keyboard = buttons.service_segments(data[1], False)
         bot.send_message(call.from_user.id, 'Оберіть сегмент послуг 🧚🏻‍',
                          reply_markup=keyboard)
@@ -275,7 +287,7 @@ def callback_handler(call):
         bot.register_next_step_handler(message=call.message, service_id=service_id, segment=segment,
                                        callback=set_money_cost, reg='reg')
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
-    elif 'saved_masters' in call.data:
+    elif 'sav_masters' in call.data:
         data = call.data.split(' ')
         masters = get_master_by_id(data[1])
         show_masters(0, 0, masters, call.from_user.id)
@@ -320,21 +332,22 @@ def callback_handler(call):
         bot.send_message(call.from_user.id, 'Оберіть, що ви хочете переглянути:',
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
-    elif call.data == 'edit_profile':
-        edit_profile(call.from_user.id)
+    elif 'edit_profile' in call.data:
+        data = call.data.split(' ')
+        edit_profile(call.from_user.id, data[1])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
     elif 'profile_edit' in call.data:
         data = call.data.split(' ')
         if data[1] == 'name':
             bot.send_message(call.from_user.id, "Введіть своє ім'я"
                                                 "(можна латиницею) і натисніть Enter ↩")
-            bot.register_next_step_handler(message=call.message, call_id=call.id, callback=edit_name)
+            bot.register_next_step_handler(message=call.message, call_id=call.id, callback=edit_name, role=data[2])
         elif data[1] == 'phone':
             bot.send_message(call.from_user.id, "Тепер надішліть свій телефон ☎️",
                              reply_markup=buttons.send_contact())
-            bot.register_next_step_handler(message=call.message, callback=edit_telephone)
+            bot.register_next_step_handler(message=call.message, callback=edit_telephone, role=data[2])
         elif data[1] == 'tg_link':
-            update_user_name(call.from_user.id, call.from_user.username)
+            update_user_name(call.from_user.id, call.from_user.username, role=data[2])
             bot.answer_callback_query(call.id, text="Змінено")
         elif data[1] == 'card':
             bot.send_message(call.from_user.id,
@@ -343,13 +356,13 @@ def callback_handler(call):
                              'Також рекомендую видалити його з чату 😉')
             bot.register_next_step_handler(message=call.message, call_id=call.id, callback=edit_card)
         elif data[1] == 'placement':
-            user_instance = get_user(call.from_user.id)
+            user_instance = get_master(call.from_user.id)
             data = buttons.set_placement_buttons(user_instance[0].city_id, '')
             bot.send_message(call.from_user.id, data[0],
                              reply_markup=data[1])
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
         elif data[1] == 'edit_city':
-            keyboard = buttons.city_buttons('1', '1')
+            keyboard = buttons.city_buttons(data[2], '1')
             bot.send_message(call.from_user.id, "Оберіть Ваше місто🌆:", reply_markup=keyboard)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
         elif data[1] == 'details':
@@ -540,7 +553,6 @@ def edit_certificate_photo(message, certificate_id):
     else:
         while True:
             ran = str(message.from_user.id) + '_' + str(random.randint(1000, 9999))
-            print(ran)
             if not os.path.exists(data_path + str(message.from_user.id) + '\\certificates\\' +
                                   str(ran) + '.jpg'):
                 break
@@ -572,14 +584,17 @@ def update_certificate_photo(message, ran, create):
 
 
 def to_menu(call):
-    user_instance = get_user(call.from_user_id)
-    if user_instance[0].current_user:
-        keyboard = buttons.master_menu_1(call.from_user.id)
-        # keyboard.add(buttons.master_back()) 
+    if get_user_role(call.from_user.id):
+        user_instance = get_master(call.from_user.id)
+        if user_instance[0].cur_role:
+            keyboard = buttons.master_menu_1(call.from_user.id)
+        else:
+            keyboard = buttons.client_menu('master')
     else:
-        keyboard = buttons.client_menu()
-    bot.edit_message_text('Меню', call.from_user.id, call.message.message_id)
-    bot.edit_message_reply_markup(call.from_user.id, call.message.message_id, reply_markup=keyboard)
+        keyboard = buttons.client_menu('client')
+    bot.send_message(call.from_user.id, 'Меню', reply_markup=keyboard)
+    # bot.edit_message_text('Меню', call.from_user.id, call.message.message_id)
+    # bot.edit_message_reply_markup(call.from_user.id, call.message.message_id, reply_markup=keyboard)
 
 
 def edit_sample_service(service_id, user_id):
@@ -649,37 +664,36 @@ def master_reg_start(message, user_id):
     bot.register_next_step_handler(message=message, reg='reg', callback=set_acc_photo)
 
 
-def edit_name(message, call_id):
-    update_name(message.from_user.id, message.text)
-    edit_profile(message.from_user.id)
+def edit_name(message, call_id, role):
+    update_name(message.from_user.id, message.text, role)
+    edit_profile(message.from_user.id, role)
     bot.answer_callback_query(call_id, text="Змінено")
 
 
-def edit_telephone(message):
+def edit_telephone(message, role):
     if message.contact is not None:
-        update_telephone(message.from_user.id, message.contact.phone_number)
+        update_telephone(message.from_user.id, message.contact.phone_number, role)
     else:
-        update_telephone(message.from_user.id, message.text)
+        update_telephone(message.from_user.id, message.text, role)
     bot.send_message(message.from_user.id, 'Змінено!', reply_markup=buttons.del_button())
-    edit_profile(message.from_user.id)
+    edit_profile(message.from_user.id, role)
 
 
 def edit_card(message, call_id):
     update_card(message.from_user.id, base64.standard_b64encode(message.text.encode('UTF-8')))
-    edit_profile(message.from_user.id)
+    edit_profile(message.from_user.id, 'master')
     bot.answer_callback_query(call_id, text="Змінено")
 
 
-def edit_profile(user_id):
-    user_instance = get_user(user_id)
-    keyboard = buttons.edit_profile_buttons(user_instance[0].master)
+def edit_profile(user_id, role):
+    keyboard = buttons.edit_profile_buttons(role)
     bot.send_message(user_id, 'Оберіть, що хочете змінити🛠',
                      reply_markup=keyboard)
 
 
 def edit_details(message, call_id):
     update_acc_details(message.from_user.id, message.text)
-    edit_profile(message.from_user.id)
+    edit_profile(message.from_user.id, 'master')
     bot.answer_callback_query(call_id, text="Змінено")
 
 
@@ -723,7 +737,7 @@ def show_orders(orders, user_id, master_flag):
         keyboard = buttons.empty_template()
         service = get_service_by_id(order.service_id)
         time_slot = get_time_slot_by_id(order.time_slot_id)
-        master = get_user(order.master_id)
+        master = get_master(order.master_id)
         prepaid = 'Так' if order.prepaid else 'Ні'
         if not master_flag:
             if check_rating(order.master_id, order.client_id) and order.done:
@@ -758,7 +772,7 @@ def registration(message, role):
 
 
 def set_name(message, role):
-    create_user(user_id=message.from_user.id, name=message.text, username=message.from_user.username)
+    create_user(user_id=message.from_user.id, name=message.text, username=message.from_user.username, role=role)
     bot.send_message(message.chat.id, "Тепер надішліть свій телефон ☎️",
                      reply_markup=buttons.send_contact())
     bot.register_next_step_handler(message=message, role=role, callback=set_telephone)
@@ -766,9 +780,9 @@ def set_name(message, role):
 
 def set_telephone(message, role):
     if message.contact is not None:
-        update_telephone(message.from_user.id, message.contact.phone_number)
+        update_telephone(message.from_user.id, message.contact.phone_number, role)
     else:
-        update_telephone(message.from_user.id, message.text)
+        update_telephone(message.from_user.id, message.text, role)
     keyboard = buttons.city_buttons(role, 'reg')
     bot.send_message(message.from_user.id, 'Слідуйте далі!', reply_markup=buttons.del_button())
     bot.send_message(message.chat.id, "А зараз оберіть Ваше місто:", reply_markup=keyboard)
@@ -811,7 +825,7 @@ def set_acc_photo(message, reg):
                          'Також рекомендую видалити його з чату 😉')
         bot.register_next_step_handler(message, set_card)
     else:
-        edit_profile(message.from_user.id)
+        edit_profile(message.from_user.id, 'master')
 
 
 def set_card(message):
@@ -823,17 +837,17 @@ def set_card(message):
 
 def set_acc_details(message):
     update_acc_details(message.from_user.id, message.text)
-    user_instance = get_user(message.from_user.id)
+    user_instance = get_master(message.from_user.id)
     data = buttons.set_placement_buttons(user_instance[0].city_id, 'reg')
     bot.send_message(message.from_user.id, data[0],
                      reply_markup=data[1])
 
 
-def show_profile(user_id):
-    instance = get_user(user_id)
+def show_profile(user_id, role):
     keyboard = buttons.to_menu()
-    keyboard.add(buttons.edit_profile())
-    if instance[0].master:
+    keyboard.add(buttons.edit_profile(role))
+    if role == 'master':
+        instance = get_master(user_id)
         try:
             img = open(data_path + str(user_id) + '\\profile\\profile.jpg', 'rb')
         except Exception as ex:
@@ -852,12 +866,13 @@ def show_profile(user_id):
                                f"`Мій рейтинг:` {instance[1]} \n\n", parse_mode='markdown', reply_markup=keyboard)
         img.close()
     else:
+        instance = get_client(user_id)
         bot.send_message(user_id,
                          f"`Ім'я:` {instance[0].name} \n\n"
                          f"`Телефон:` {instance[0].telephone} \n\n"
                          # f"`Пошта:` {instance[0].email} \n\n"
                          f"`Посилання в телеграмі:` @{instance[0].username} \n\n"
-                         f"`Місто:` {instance[3]} \n\n",
+                         f"`Місто:` {instance[2]} \n\n",
                          parse_mode='markdown', reply_markup=keyboard)
 
 
@@ -992,6 +1007,8 @@ def set_end_time(message, start_time, date):
 
 
 bot.enable_save_next_step_handlers(delay=2)
+
+
 # bot.load_next_step_handlers()
 
 
@@ -1008,7 +1025,6 @@ if __name__ == '__main__':
     #     try:
     check_start_ud_data()
     bot.polling(none_stop=True)
-        # except Exception as e:
-        #     print(e)
-        #     time.sleep(10)
-
+    # except Exception as e:
+    #     print(e)
+    #     time.sleep(10)
