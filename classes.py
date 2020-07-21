@@ -35,12 +35,32 @@ class User(Base):
     telephone = Column(String(25))
     username = Column(String(40))
     email = Column(String(30))
-    master = Column(Boolean, nullable=False, default=False)
+    city_id = Column(Integer, ForeignKey(City.id))
+
+
+class Master(User):
+    __tablename__ = 'master'
+
+    id = Column(Integer, ForeignKey(User.id), primary_key=True)
     placement_id = Column(Integer, ForeignKey(Placement.id))
     image = Column(Boolean, default=False)
     details = Column(String(255))
-    city_id = Column(Integer, ForeignKey(City.id))
     card = Column(String(40))
+    cur_role = Column(Boolean, default=False)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'master',
+    }
+
+
+class Client(User):
+    __tablename__ = 'client'
+
+    id = Column(Integer, ForeignKey(User.id), primary_key=True)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'client',
+    }
 
 
 class Saved_placement(Base):

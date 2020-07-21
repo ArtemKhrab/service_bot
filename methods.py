@@ -1,6 +1,5 @@
 from classes import *
 
-
 def check_user(tg_id):
     response = session.query(User).filter_by(user_id=tg_id)
     for row in response:
@@ -332,6 +331,12 @@ def get_sample_service_by_id(service_id):
 
 def get_certificate_by_id(certificate_id):
     return session.query(Media).filter(Media.id == certificate_id).all()
+
+
+def set_current_role(user_id, role):
+    session.query(User).filter(User.user_id == user_id). \
+        update({User.current_role: role}, synchronize_session=False)
+    session.commit()
 
 
 # if __name__ == '__main__':
