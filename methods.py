@@ -448,6 +448,7 @@ def get_city_by_id(city_id):
     city = session.query(City).filter_by(id=city_id).all()
     return city[0].name
 
+
 # if __name__ == '__main__':
 #     data = session.query(Service_type.name).filter(Service_type.master_id == '405423146',
 #                                             Service_type.segment_id == '1').all()
