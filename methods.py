@@ -359,6 +359,14 @@ def get_service_names(user_id, segment):
         return data
 
 
+def get_days(user_id):
+    data = session.query(Working_days.day_name).filter(Working_days.master_id == user_id).all()
+    if data is None:
+        return []
+    else:
+        return data
+
+
 def update_service_cost(service_id, money_cost):
     session.query(Service_type).filter(Service_type.id == service_id). \
         update({Service_type.money_cost: money_cost}, synchronize_session=False)
@@ -443,6 +451,15 @@ def get_user_role(tg_id):
 def get_city_by_id(city_id):
     city = session.query(City).filter_by(id=city_id).all()
     return city[0].name
+
+
+def move_user(user_id):
+    user_instance = get_client(user_id)
+    instance = Master(name=user_instance[0].name, user_id=user_instance[0].user_id, username=user_instance[0].username,
+                      telephone=user_instance[0].telephone, city_id=user_instance[0].city_id)
+    session.add(instance)
+    session.commit()
+    update_to_master(user_id)
 
 
 # if __name__ == '__main__':

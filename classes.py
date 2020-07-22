@@ -176,9 +176,9 @@ class Order(Base):
     client_id_master_acc = Column(String(25), ForeignKey(Master.user_id))
     master_id = Column(String(25), ForeignKey(Master.user_id))
     service_id = Column(Integer, ForeignKey(Service_type.id))
-    prepaid = Column(Boolean, nullable=False, default=False)
-    done = Column(Boolean, nullable=False, default=False)
-    canceled = Column(Boolean, nullable=False, default=False)
+    prepaid = Column(Boolean, default=False)
+    done = Column(Boolean, default=False)
+    canceled = Column(Boolean, default=False)
 
 
 class Rating(Base):
@@ -198,6 +198,14 @@ class Saved_masters(Base):
     client_id = Column(String(25), ForeignKey(Client.user_id))
     client_id_master_acc = Column(String(25), ForeignKey(Master.user_id))
     master_id = Column(String(25), ForeignKey(Master.user_id))
+
+
+class Working_days(Base):
+    __tablename__ = 'working_days'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    day_name = Column(String(2), nullable=False)
+    master_id = Column(String(25), ForeignKey(Master.user_id), nullable=False)
+    working_hours = Column(String(11))
 
 
 Base.metadata.create_all(engine)

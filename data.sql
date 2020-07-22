@@ -10,8 +10,11 @@ insert into bot.city (name) values ('Вінниця');
 insert into bot.placement (name, latitude, longitude, address, city_id) values ('Салон корекції брів', 1, 1, 'вул. Раїси Окріпної, 4а', 1);
 
 insert into bot.service_segment (name)values ('Брови, вії');
-insert into bot.service_segment  (name)values ('Нігтьовий сервіс');
-insert into bot.service_segment  (name)values ('Перукарські послуги');
+insert into bot.service_segment (name)values ('Нігтьовий сервіс');
+insert into bot.service_segment (name)values ('Перукарські послуги');
+insert into bot.service_segment (name)values ('Виділити вільний час');
+
+select  * from bot.service_segment;
 
 
 

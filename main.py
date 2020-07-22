@@ -34,6 +34,11 @@ def callback_handler(call):
     if 'registration' in call.data:
         bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
+        if flag:
+            bot.send_message(call.from_user.id, 'Ви вже зареєстровані!')
+            to_menu(call)
+            bot.answer_callback_query(call.id, text=" ", show_alert=False)
+            return
         registration(call.message, data[1])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
@@ -236,6 +241,7 @@ def callback_handler(call):
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
     elif call.data == 'reg_as_master':
+        move_user(call.from_user.id)
         master_reg_start(call.message, call.from_user.id)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
@@ -328,11 +334,13 @@ def callback_handler(call):
         bot.send_message(call.from_user.id, "Улюблені майстри:", reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
     elif 'check_services' in call.data:
+        print(call.data)
         data = call.data.split(' ')
-        # if str(data[1]) == str(call.from_user.id):
-        #     bot.answer_callback_query(call.id, text="Ви не можете записатися до самого себе!")
-        #     return
-        keyboard = buttons.service_segments(data[1], False)
+        try:
+            reservation = data[2]
+        except:
+            reservation = None
+        keyboard = buttons.service_segments(data[1], False, reservation)
         bot.send_message(call.from_user.id, 'Оберіть сегмент послуг 🧚🏻‍',
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
@@ -342,15 +350,16 @@ def callback_handler(call):
         if keyboard is None:
             bot.answer_callback_query(call.id, text="На жаль, послуги не додані")
             return
-        if str(call.from_user.id) is str(data[2]):
+        if (str(call.from_user.id) is str(data[2])) and (data[3] is not 'reservation'):
             bot.send_message(call.from_user.id, 'Уточніть процедуру 🗂',
                              reply_markup=keyboard[1])
         else:
             bot.send_message(call.from_user.id, keyboard[0],
                              reply_markup=keyboard[1])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
-    elif call.data == 'add_service':
-        add_new_service(call)
+    elif 'add_service' in call.data:
+        data = call.data.split(' ')
+        add_new_service(call, data[1])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
     elif 'service_segment' in call.data:
         data = call.data.split(' ')
@@ -678,6 +687,16 @@ def callback_handler(call):
         return
 
 
+def set_working_days(user_id):
+    try:
+        days = get_days(user_id)
+    except Exception as ex:
+        logging.error(f'Could not get master working days from db. Cause: {ex}. Time: {time.asctime()}')
+        return
+    keyboard = buttons.working_days_buttons(days)
+    bot.send_message(user_id, "Оберіть дні, по яким Ви працюєте👩‍⚕", reply_markup=keyboard)
+
+
 def add_new_service(call):
     keyboard = buttons.service_segments(call.from_user.id, True)
     bot.send_message(call.from_user.id,
@@ -798,8 +817,6 @@ def to_menu(call):
         logging.error(f'Could not get user data. Func: to_menu . Cause: {ex}. Time: {time.asctime()}')
         return
     bot.send_message(call.from_user.id, 'Меню', reply_markup=keyboard)
-    # bot.edit_message_text('Меню', call.from_user.id, call.message.message_id)
-    # bot.edit_message_reply_markup(call.from_user.id, call.message.message_id, reply_markup=keyboard)
 
 
 def edit_sample_service(service_id, user_id):
@@ -1046,22 +1063,6 @@ def set_telephone(message, role):
     keyboard = buttons.city_buttons(role, 'reg')
     bot.send_message(message.from_user.id, 'Слідуйте далі!', reply_markup=buttons.del_button())
     bot.send_message(message.chat.id, "А зараз оберіть Ваше місто:", reply_markup=keyboard)
-    # bot.send_message(message.chat.id, "залишилось ще трошки", reply_markup=buttons.del_button())
-    # bot.send_message(message.chat.id, "введіть Вашу email адресу")
-    # bot.register_next_step_handler(message, set_email)
-
-
-# def set_email(message):
-#     if not re.match(r'^[a-z0-9A-Z]+[._]?[a-z0-9A-Z]+[@]\w+[.]\w{2,3}$', message.text):
-#         bot.send_message(message.chat.id, "Невірний формат електронної адреси")
-#         bot.send_message(message.chat.id, "Спробуйте ще раз!")
-#         bot.register_next_step_handler(message, set_email)
-#         return
-#     else:
-#         update_email(message.from_user.id, message.text)
-#         keyboard = buttons.city_buttons()
-#         bot.send_message(message.chat.id, "А зараз оберіть Ваше місто:", reply_markup=keyboard)
-#         return
 
 
 def set_acc_photo(message, reg):
@@ -1331,12 +1332,9 @@ def check_start_ud_data():
 
 if __name__ == '__main__':
     logging.basicConfig(filename='logs.log')
-    # while True:
-    #     try:
     try:
         check_start_ud_data()
         bot.polling(none_stop=True)
     except Exception as e:
         logging.error(f'Could not start a bot. Cause: {e}. Time: {time.asctime()}')
-    #     print(e)
-    #     time.sleep(10)
+
