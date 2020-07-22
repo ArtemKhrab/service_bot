@@ -2,15 +2,11 @@ from classes import *
 
 
 def check_user(tg_id):
-    response = session.query(Client).filter_by(user_id=tg_id).all()
+    response = session.query(User_role).filter_by(id=tg_id).all()
     if not response.__len__() < 1:
         return True
     else:
-        response = session.query(Master).filter_by(user_id=tg_id).all()
-        if not response.__len__() < 1:
-            return True
-        else:
-            return False
+        return False
 
 
 def get_point(user_id):

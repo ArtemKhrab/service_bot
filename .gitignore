@@ -6,3 +6,6 @@ token.pickle
 /.handler-saves
 /venv
 data/dafault.jpeg
+.env
+/data
+*.log
