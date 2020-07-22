@@ -106,11 +106,11 @@ def callback_handler(call):
             session.rollback()
             return
         if data[2] == 'reg':
-            update_master_flag(call.from_user.id)
             set_current_role(call.from_user.id, True)
             keyboard = buttons.to_menu()
-            bot.send_message(call.from_user.id, "Супер! Тепер ви зареєстровані і до вас вже можна записуватись 🥳",
-                             reply_markup=keyboard)
+            add_new_service(call)
+            # bot.send_message(call.from_user.id, "Супер! Тепер ви зареєстровані і до вас вже можна записуватись 🥳",
+            #                  reply_markup=keyboard)
         else:
             edit_profile(call.from_user.id, 'master')
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
@@ -143,7 +143,7 @@ def callback_handler(call):
             return
         bot.send_message(call.from_user.id, f'Ви обрали місто: {city}🌆')
         if data[3] == 'reg':
-            create_user_role(call.from_user.id)
+
             if data[2] == 'master':
                 update_to_master(call.from_user.id)
                 master_reg_start(call.message, call.from_user.id)
@@ -350,10 +350,7 @@ def callback_handler(call):
                              reply_markup=keyboard[1])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
     elif call.data == 'add_service':
-        keyboard = buttons.service_segments(call.from_user.id, True)
-        bot.send_message(call.from_user.id,
-                         'Оберіть сегмент послуг, що надаєте 🧚🏻‍♀',
-                         reply_markup=keyboard)
+        add_new_service(call)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
     elif 'service_segment' in call.data:
         data = call.data.split(' ')
@@ -380,6 +377,8 @@ def callback_handler(call):
             logging.error(f'Could not create service. Cause: {ex}. Time: {time.asctime()}')
             session.rollback()
             return
+        bot.delete_message(call.from_user.id, call.message.message_id)
+        bot.send_message(call.from_user.id, service + ':')
         bot.send_message(call.from_user.id, '💵 Яка вартість процедури?')
         bot.register_next_step_handler(message=call.message, service_id=service_id, segment=segment,
                                        callback=set_money_cost, reg='reg')
@@ -679,6 +678,13 @@ def callback_handler(call):
         return
 
 
+def add_new_service(call):
+    keyboard = buttons.service_segments(call.from_user.id, True)
+    bot.send_message(call.from_user.id,
+                     'Оберіть сегмент послуг, що надаєте 🧚🏻‍♀',
+                     reply_markup=keyboard)
+
+
 def set_feedback(message, user_id, master_id, call):
     keyboard = buttons.to_completed_services()
     if message.text is None:
@@ -954,7 +960,8 @@ def set_time_cost(message, service_id, segment, reg='1'):
         logging.error(f'Could not update service time cost. Cause: {ex}. Input: {message.text}. Time: {time.asctime()}')
         return
     if reg == 'reg':
-        keyboard = buttons.to_menu_2()
+        keyboard = buttons.to_menu()
+        keyboard.add(buttons.back())
         keyboard.add(buttons.add_more_button(segment))
         bot.send_message(message.chat.id, 'Процедуру додано 👍', reply_markup=keyboard)
     else:
@@ -1014,6 +1021,13 @@ def set_name(message, role):
         create_user(user_id=message.from_user.id, name=message.text, username=message.from_user.username, role=role)
     except Exception as ex:
         logging.error(f'Could not set name. Cause: {ex}. Time: {time.asctime()}')
+        return
+    try:
+        create_user_role(message.from_user.id)
+        if role == 'master':
+            update_master_flag(message.from_user.id)
+    except Exception as ex:
+        logging.error(f'Could not create user role, or update user to master. Cause: {ex}. Time: {time.asctime()}')
         return
     bot.send_message(message.chat.id, "Тепер надішліть свій телефон ☎️",
                      reply_markup=buttons.send_contact())

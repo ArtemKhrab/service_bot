@@ -4,7 +4,7 @@ import datetime
 import methods
 
 stickers = {'Брови, вії': '👁', 'Нігтьовий сервіс':
-            '💅🏻', 'Перукарські послуги': '✂'}
+    '💅🏻', 'Перукарські послуги': '✂'}
 service_eyes = ['Корекція брів', 'Фарбування брів',
                 'Фарбування вій', 'Нарощування вій',
                 'Завивка вій', 'Ламінування вій',
@@ -72,12 +72,9 @@ def choose_role_reg():
     return keyboard
 
 
-def to_menu_2():
-    keyboard = types.InlineKeyboardMarkup()
-    callback_button = types.InlineKeyboardButton(text="Далі",
-                                                 callback_data='menu')
-    keyboard.add(callback_button)
-    return keyboard
+def back():
+    return types.InlineKeyboardButton(text="Далі",
+                                      callback_data='add_service')
 
 
 def choose_language_buttons():
@@ -193,8 +190,8 @@ def service_segments(master_id, add):
                                                          callback_data='order_service ' + str(segment.id) + ' '
                                                                        + str(master_id))
             keyboard.add(callback_button)
-    callback_button = types.InlineKeyboardButton(text="⬅ Повернутись",
-                                                 callback_data='del_message')
+    callback_button = types.InlineKeyboardButton(text="Меню",
+                                                 callback_data='menu')
     keyboard.add(callback_button)
     return keyboard
 
@@ -453,9 +450,11 @@ def get_services(master_id, user_id, segment):
     keyboard = types.InlineKeyboardMarkup()
     if str(master_id) == str(user_id):
         for service in services:
+            money = service.money_cost+'₴' if service.money_cost is not None else 'не задано'
+            time = service.time_cost if service.time_cost is not None else 'не задано'
             try:
-                text += str(counter) + '. ' + service.name + ' Ціна: ' + service.money_cost + \
-                        '₴, Час выконання: ' + service.time_cost + '\n'
+                text += str(counter) + '. ' + service.name + ' Ціна: ' + money + \
+                        ', Час выконання: ' + time + '\n'
             except TypeError as tp:
                 print(tp)
             counter += 1
