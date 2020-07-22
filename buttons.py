@@ -4,7 +4,7 @@ import datetime
 import methods
 
 stickers = {'Брови, вії': '👁', 'Нігтьовий сервіс':
-    '💅🏻', 'Перукарські послуги': '✂'}
+            '💅🏻', 'Перукарські послуги': '✂'}
 service_eyes = ['Корекція брів', 'Фарбування брів',
                 'Фарбування вій', 'Нарощування вій',
                 'Завивка вій', 'Ламінування вій',
@@ -86,7 +86,8 @@ def choose_language_buttons():
                                            callback_data='language UA')
     uk_button = types.InlineKeyboardButton(text="🇬🇧 English",
                                            callback_data='language UK')
-    keyboard.add(ua_button, uk_button)
+    # keyboard.add(ua_button, uk_button)
+    keyboard.add(ua_button)
     return keyboard
 
 

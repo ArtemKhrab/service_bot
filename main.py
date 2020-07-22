@@ -17,12 +17,14 @@ data_path = os.curdir + '\\data\\'
 
 @bot.message_handler(commands=['start'])
 def start(message):
+    bot.clear_step_handler_by_chat_id(message.from_user.id)
     keyboard = buttons.choose_language_buttons()
     bot.send_message(message.from_user.id, 'Обери мову/Choose a language', reply_markup=keyboard)
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
+    bot.clear_step_handler_by_chat_id(call.from_user.id)
     try:
         flag = check_user(call.from_user.id)
     except Exception as ex:
@@ -1064,7 +1066,7 @@ def set_acc_photo(message, reg):
     try:
         update_acc_photo(message.from_user.id)
     except Exception as ex:
-        logging.error(f'Could not set acc photo (Line: 868). Cause: {ex}. Time: {time.asctime()}')
+        logging.error(f'Could not set acc photo (Line: 1067). Cause: {ex}. Time: {time.asctime()}')
         return
     if reg == 'reg':
         bot.send_message(message.from_user.id,
