@@ -330,7 +330,7 @@ def callback_handler(call):
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
 
-    elif call.data == 'del_message':
+    elif 'del_message' in call.data:
         bot.delete_message(call.from_user.id, call.message.message_id)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
@@ -377,7 +377,7 @@ def callback_handler(call):
 
     elif 'order_service' in call.data:
         data = call.data.split(' ')
-        keyboard = buttons.get_services(data[2], call.from_user.id, data[1])
+        keyboard = buttons.get_services(data[2], call.from_user.id, data[1], data[3])
 
         if keyboard is None:
             bot.answer_callback_query(call.id, text="На жаль, послуги не додані")
@@ -445,7 +445,8 @@ def callback_handler(call):
 
     elif 'choose_service ' in call.data:
         data = call.data.split(' ')
-        # check_time_slot(data[1], call, data[2])
+        print(data)
+        show_working_days(call, data[1], data[2])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
     elif 'set_working_days' in call.data:
@@ -822,6 +823,22 @@ def callback_handler(call):
             set_working_days(call, False, 'show')
 
 
+def show_working_days(call, master_id, service_id):
+    try:
+        days = get_available_days(master_id, calculations.get_current_day())
+    except Exception as ex:
+        logging.error(f'Could not get available days. Cause: {ex}. Time: {time.asctime()}')
+        return
+    keyboard = buttons.reserve_day(days, master_id, service_id)
+    if keyboard is None:
+        keyboard = buttons.empty_template()
+        keyboard.add(buttons.back_and_delete())
+        bot.send_message(call.from_user.id, 'На жаль, доступних днів немає',
+                         reply_markup=keyboard)
+        return
+    bot.send_message(call.from_user.id, 'Оберіть день:', reply_markup=keyboard)
+
+
 def update_time(message, day_id, call):
 
     if not calculations.regex_time(message):
@@ -1106,7 +1123,7 @@ def edit_sample_service_name(message, service_id):
 
 
 def edit_service(user_id, segment):
-    keyboard = buttons.get_services(user_id, user_id, segment)
+    keyboard = buttons.get_services(user_id, user_id, segment, None)
     bot.send_message(user_id, keyboard[0],
                      reply_markup=keyboard[1])
 
@@ -1243,8 +1260,6 @@ def show_orders(orders, user_id, master_flag):
         bot.send_message(user_id, f'`Назва послуги:` {str(service[0].name)} \n'
                                   f"`Ім'я майстра:` {str(master[0].name)} \n"
                                   f"`Телефон майстра:` {str(master[0].telephone)} \n"
-        # f"`Дата:` {str(time_slot[0].date)} \n"
-        # f"`Початок о:` {str(time_slot[0].start_time)} \n"
                                   f"`Передплачено: ` {str(prepaid)} \n",
                          reply_markup=keyboard, parse_mode='markdown')
     bot.send_message(user_id, 'Повернутись у меню', reply_markup=buttons.to_menu())
@@ -1508,7 +1523,7 @@ def show_services(index, end_index, services, user_id):
 
 def show_masters(index, end_index, masters, user_id):
     keyboard = buttons.moving_masters_buttons(index, end_index,
-                                              masters[int(index)].user_id, masters[int(index)].placement_id)
+                                              masters[int(index)].user_id, masters[int(index)].placement_id, user_id)
     try:
         img = open(data_path + masters[int(index)].user_id + '\\profile\\profile.jpg', 'rb')
     except Exception as ex:

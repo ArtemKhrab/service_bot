@@ -126,6 +126,7 @@ class Working_days(Base):
     day_name = Column(String(2), nullable=False)
     master_id = Column(String(25), ForeignKey(Master.user_id), nullable=False)
     working_hours = Column(String(11))
+    day_num = Column(Integer, nullable=False)
     non_active = Column(Boolean, default=False)
 
 

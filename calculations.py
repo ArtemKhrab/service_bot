@@ -1,6 +1,8 @@
 import time
 import cmath
-import  re
+import re
+from datetime import datetime
+import calendar
 
 
 def check_time(t):
@@ -16,3 +18,10 @@ def regex_time(message):
         return False
     else:
         return True
+
+
+def get_current_day():
+    return datetime.date(datetime.now()).weekday()
+
+if __name__ == '__main__':
+    print(calendar.day_name[get_current_day()])
