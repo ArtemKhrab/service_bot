@@ -383,7 +383,7 @@ def callback_handler(call):
             bot.answer_callback_query(call.id, text="На жаль, послуги не додані")
             return
 
-        if (str(call.from_user.id) is str(data[2])) and (data[3] is not 'reservation'):
+        if (str(call.from_user.id) is str(data[2])) and (data[3] != 'reservation'):
             bot.send_message(call.from_user.id, 'Уточніть процедуру 🗂',
                              reply_markup=keyboard[1])
         else:
@@ -445,7 +445,6 @@ def callback_handler(call):
 
     elif 'choose_service ' in call.data:
         data = call.data.split(' ')
-        print(data)
         show_working_days(call, data[1], data[2])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 

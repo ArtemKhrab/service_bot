@@ -317,7 +317,6 @@ def get_service_names(user_id, segment):
 
 def get_days(user_id):
     data = session.query(Working_days).filter(Working_days.master_id == user_id).all()
-    print(data)
     if data is None:
         return []
     else:
@@ -450,7 +449,6 @@ def edit_day(day_id, non_active=False, set_time=False, time=None, active=False):
         return None
 
 def get_available_days(master_id, current_day_num):
-    print(current_day_num)
     data = session.query(Working_days).filter(Working_days.master_id == master_id,
                                               Working_days.day_num >= int(current_day_num),
                                               Working_days.non_active == 0).all()
