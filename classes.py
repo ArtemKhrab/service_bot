@@ -26,43 +26,6 @@ class Placement(Base):
     city_id = Column(Integer, ForeignKey(City.id))
 
 
-# class User(Base):
-#     __tablename__ = 'user'
-#
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     name = Column(String(50), nullable=False)
-#     user_id = Column(String(25), unique=True)
-#     telephone = Column(String(25))
-#     username = Column(String(40))
-#     email = Column(String(30))
-#     city_id = Column(Integer, ForeignKey(City.id))
-#
-#
-# class Master(User):
-#     __tablename__ = 'master'
-#
-#     id = Column(Integer, ForeignKey(User.id), primary_key=True)
-#     placement_id = Column(Integer, ForeignKey(Placement.id))
-#     image = Column(Boolean, default=False)
-#     details = Column(String(255))
-#     card = Column(String(40))
-#     cur_role = Column(Boolean, default=False)
-#
-#     __mapper_args__ = {
-#         'polymorphic_identity': 'master',
-#     }
-#
-#
-# class Client(User):
-#     __tablename__ = 'client'
-#
-#     id = Column(Integer, ForeignKey(User.id), primary_key=True)
-#
-#     __mapper_args__ = {
-#         'polymorphic_identity': 'client',
-#     }
-
-
 class Client(Base):
     __tablename__ = 'client'
 
@@ -156,29 +119,32 @@ class Services(Base):
     money_cost = Column(String(5), default='0')
 
 
-class Time_slot(Base):
-    __tablename__ = 'time_slot'
+class Working_days(Base):
+    __tablename__ = 'working_days'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    start_time = Column(Time, nullable=False)
-    end_time = Column(Time, nullable=False)
-    master_id = Column(String(25), ForeignKey(Master.user_id))
-    date = Column(Date, nullable=False)
-    ordered = Column(Boolean, default=False)
+    day_name = Column(String(2), nullable=False)
+    master_id = Column(String(25), ForeignKey(Master.user_id), nullable=False)
+    working_hours = Column(String(11))
+    non_active = Column(Boolean, default=False)
 
 
 class Order(Base):
     __tablename__ = 'order'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    time_slot_id = Column(Integer, ForeignKey(Time_slot.id))
     client_id = Column(String(25), ForeignKey(Client.user_id))
     client_id_master_acc = Column(String(25), ForeignKey(Master.user_id))
     master_id = Column(String(25), ForeignKey(Master.user_id))
     service_id = Column(Integer, ForeignKey(Service_type.id))
+    day_id = Column(Integer, ForeignKey(Working_days.id))
+    date = Column(Date)
+    time = Column(Time)
     prepaid = Column(Boolean, default=False)
     done = Column(Boolean, default=False)
-    canceled = Column(Boolean, default=False)
+    canceled_by_client = Column(Boolean, default=False)
+    canceled_by_master = Column(Boolean, default=False)
+    canceled_by_system = Column(Boolean, default=False)
 
 
 class Rating(Base):
@@ -198,14 +164,6 @@ class Saved_masters(Base):
     client_id = Column(String(25), ForeignKey(Client.user_id))
     client_id_master_acc = Column(String(25), ForeignKey(Master.user_id))
     master_id = Column(String(25), ForeignKey(Master.user_id))
-
-
-class Working_days(Base):
-    __tablename__ = 'working_days'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    day_name = Column(String(2), nullable=False)
-    master_id = Column(String(25), ForeignKey(Master.user_id), nullable=False)
-    working_hours = Column(String(11))
 
 
 Base.metadata.create_all(engine)

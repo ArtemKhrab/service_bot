@@ -7,7 +7,7 @@ import telebot
 import base64
 import time
 import logging
-
+import calculations
 
 from config import token
 
@@ -25,12 +25,14 @@ def start(message):
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     bot.clear_step_handler_by_chat_id(call.from_user.id)
+
     try:
         flag = check_user(call.from_user.id)
     except Exception as ex:
         session.rollback()
         logging.error(f'Could not check user. Cause: {ex}. Time: {time.asctime()}')
         return
+
     if 'registration' in call.data:
         bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
@@ -42,30 +44,37 @@ def callback_handler(call):
         registration(call.message, data[1])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'language' in call.data:
         greetings = ('Привіт, мене звуть Лола! 💁‍♀️\n\n'
                      '🤖 Я робот і буду виконувати роль твого'
                      ' персонального менеджера. \n\n')
+
         if flag:
             keyboard = buttons.choose_role_button_menu()
         else:
             keyboard = buttons.choose_role_button_reg()
             greetings += 'Але перед початком треба  зареєструватись👇🏻'
+
         bot.send_message(call.from_user.id, greetings,
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif "choose role" in call.data:
         data = call.data.split(' ')
         keyboard = buttons.empty_template()
+
         if data[2] == 'reg':
             keyboard = buttons.choose_role_reg()
         elif data[2] == 'menu':
             keyboard = buttons.choose_role_menu()
+
         bot.send_message(call.from_user.id, "Оберіть вашу роль 👤",
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'change_role' in call.data:
         bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
@@ -75,6 +84,7 @@ def callback_handler(call):
             logging.error(f'Could not get current role. Cause: {ex}. Time: {time.asctime()}')
             session.rollback()
             return
+
         if data[1] == '1':
             if user_instance:
                 try:
@@ -101,6 +111,7 @@ def callback_handler(call):
             to_menu(call)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'set_placement' in call.data:
         bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
@@ -110,32 +121,39 @@ def callback_handler(call):
             logging.error(f'Could not update placement. Cause: {ex}. Time: {time.asctime()}')
             session.rollback()
             return
+
         if data[2] == 'reg':
             set_current_role(call.from_user.id, True)
-            keyboard = buttons.to_menu()
+            # keyboard = buttons.to_menu()
             add_new_service(call)
             # bot.send_message(call.from_user.id, "Супер! Тепер ви зареєстровані і до вас вже можна записуватись 🥳",
             #                  reply_markup=keyboard)
         else:
             edit_profile(call.from_user.id, 'master')
+
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     if not flag:
         keyboard = buttons.choose_role_button_reg()
         bot.send_message(call.from_user.id, "Спочатку зареєструйтесь!", reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     if call.data == 'menu':
         to_menu(call)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif call.data == 'menu_1':
         bot.edit_message_reply_markup(call.from_user.id, call.message.message_id,
                                       reply_markup=buttons.master_menu_1(call.from_user.id))
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif call.data == 'menu_2':
         bot.edit_message_reply_markup(call.from_user.id, call.message.message_id,
                                       reply_markup=buttons.master_menu_2())
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'set_city' in call.data:
         bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
@@ -147,8 +165,8 @@ def callback_handler(call):
             session.rollback()
             return
         bot.send_message(call.from_user.id, f'Ви обрали місто: {city}🌆')
-        if data[3] == 'reg':
 
+        if data[3] == 'reg':
             if data[2] == 'master':
                 update_to_master(call.from_user.id)
                 master_reg_start(call.message, call.from_user.id)
@@ -164,6 +182,7 @@ def callback_handler(call):
             edit_profile(call.from_user.id, data[2])
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
+
     elif call.data == 'check_profile':
         try:
             if get_user_role(call.from_user.id):
@@ -176,23 +195,28 @@ def callback_handler(call):
             session.rollback()
             return
         return
+
     elif call.data == 'add_media':
         add_certificate(call.message)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif call.data == 'add_sample_service':
         bot.send_message(call.from_user.id, 'Напишіть назву послуги (назва послуги повинна відрізнятися від '
                                             'доданих раніше)')
         bot.register_next_step_handler(call.message, add_sample_service)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'check_certificates' in call.data:
         data = call.data.split(' ')
         certificates = get_certificates(data[1])
         end_index = certificates.__len__() - 1
+
         if end_index == -1:
             bot.answer_callback_query(call.id, text="На жаль, сертифікати не загружені  :(!")
             return
+
         index = 0
         try:
             show_certificates(index, end_index, certificates, call.from_user.id)
@@ -201,6 +225,7 @@ def callback_handler(call):
             session.rollback()
             return
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'move_certificate' in call.data:
         indexes = call.data.split(' ')
         bot.delete_message(call.from_user.id, call.message.message_id)
@@ -213,13 +238,16 @@ def callback_handler(call):
             return
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'check_sample_services' in call.data:
         data = call.data.split(' ')
         services = get_sample_services(data[1])
         end_index = services.__len__() - 1
+
         if end_index == -1:
             bot.answer_callback_query(call.id, text="На жаль, роботи не загружені  :(!")
             return
+
         index = 0
         try:
             show_services(index, end_index, services, call.from_user.id)
@@ -228,6 +256,7 @@ def callback_handler(call):
             session.rollback()
             return
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'move_services' in call.data:
         indexes = call.data.split(' ')
         bot.delete_message(call.from_user.id, call.message.message_id)
@@ -240,28 +269,22 @@ def callback_handler(call):
             return
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif call.data == 'reg_as_master':
         move_user(call.from_user.id)
         master_reg_start(call.message, call.from_user.id)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
-    elif call.data == 'add_time_slot':
-        keyboard = buttons.date_buttons()
-        bot.send_message(call.from_user.id, 'Оберіть дату', reply_markup=keyboard)
-        bot.answer_callback_query(call.id, text=' ', show_alert=False)
-    elif 'date_create' in call.data:
-        data = call.data.split(' ')
-        bot.send_message(call.from_user.id, 'Напишіть час початку вільного тайм слоту. (Приклад: 9:00, 14:20): ')
-        bot.register_next_step_handler(message=call.message, date=data[1], callback=set_start_time)
-        bot.answer_callback_query(call.id, text=' ', show_alert=False)
-        return
+
     elif 'order_1' in call.data:
         data = call.data.split(' ')
         try:
+
             if data == 'client':
                 user_instance = get_client(call.from_user.id)
             else:
                 user_instance = get_master(call.from_user.id)
+
         except Exception as ex:
             logging.error(f'Could not get user instance. Cause: {ex}. Time: {time.asctime()}')
             session.rollback()
@@ -270,6 +293,7 @@ def callback_handler(call):
         bot.send_message(call.from_user.id, keyboard[0],
                          reply_markup=keyboard[1])
         bot.answer_callback_query(call.id, text=' ', show_alert=False)
+
     elif 'order_placement' in call.data:
         data = call.data.split(' ')
         try:
@@ -279,9 +303,11 @@ def callback_handler(call):
             session.rollback()
             return
         end_index = masters.__len__() - 1
+
         if end_index == -1:
             bot.answer_callback_query(call.id, text="На жаль, у даному салоні майстри ще не зареєестровані :(")
             return
+
         bot.send_message(call.from_user.id, 'А зараз оберіть майстра',
                          reply_markup=buttons.del_button())
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
@@ -291,6 +317,7 @@ def callback_handler(call):
         except Exception as ex:
             logging.error(f'Could not show masters. Cause: {ex}. Time: {time.asctime()}')
             return
+
     elif 'move_masters' in call.data:
         bot.delete_message(call.from_user.id, call.message.message_id)
         indexes = call.data.split(' ')
@@ -302,15 +329,14 @@ def callback_handler(call):
             return
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
-    elif 'check_time_slot' in call.data:
-        data = call.data.split(' ')
-        check_time_slot(data[1], call, None)
-        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif call.data == 'del_message':
         bot.delete_message(call.from_user.id, call.message.message_id)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'add_to_favorite' in call.data:
         data = call.data.split(' ')
+
         if str(data[1]) != str(call.from_user.id):
             try:
                 flag = check_saved_masters(master_id=data[1], user_id=call.from_user.id)
@@ -326,41 +352,51 @@ def callback_handler(call):
         else:
             bot.answer_callback_query(call.id, text="Ви не можете додати самого"
                                                     " себе до улюблених майстрів!")
+
     elif call.data == 'saved_masters':
         keyboard = buttons.saved_masters(call.from_user.id)
+
         if keyboard is None:
             bot.answer_callback_query(call.id, text="Ви не додали жодного майстра до улюблених")
             return
+
         bot.send_message(call.from_user.id, "Улюблені майстри:", reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'check_services' in call.data:
-        print(call.data)
         data = call.data.split(' ')
         try:
             reservation = data[2]
-        except:
+        except Exception as ex:
+            print(ex)
             reservation = None
         keyboard = buttons.service_segments(data[1], False, reservation)
         bot.send_message(call.from_user.id, 'Оберіть сегмент послуг 🧚🏻‍',
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'order_service' in call.data:
         data = call.data.split(' ')
         keyboard = buttons.get_services(data[2], call.from_user.id, data[1])
+
         if keyboard is None:
             bot.answer_callback_query(call.id, text="На жаль, послуги не додані")
             return
+
         if (str(call.from_user.id) is str(data[2])) and (data[3] is not 'reservation'):
             bot.send_message(call.from_user.id, 'Уточніть процедуру 🗂',
                              reply_markup=keyboard[1])
         else:
             bot.send_message(call.from_user.id, keyboard[0],
                              reply_markup=keyboard[1])
+
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'add_service' in call.data:
-        data = call.data.split(' ')
-        add_new_service(call, data[1])
+        # data = call.data.split(' ')
+        add_new_service(call)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'service_segment' in call.data:
         data = call.data.split(' ')
         try:
@@ -373,13 +409,16 @@ def callback_handler(call):
         bot.send_message(call.from_user.id, 'Тепер уточніть процедуру 🗂',
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'add_instance' in call.data:
         data = call.data.split(' ')
         service = data[1]
         segment = data[2]
+
         if data.__len__() == 4:
             service = data[1] + ' ' + data[2]
             segment = data[3]
+
         try:
             service_id = create_service(call.from_user.id, str(service), str(segment))
         except Exception as ex:
@@ -392,6 +431,7 @@ def callback_handler(call):
         bot.register_next_step_handler(message=call.message, service_id=service_id, segment=segment,
                                        callback=set_money_cost, reg='reg')
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'sav_masters' in call.data:
         data = call.data.split(' ')
         try:
@@ -402,60 +442,64 @@ def callback_handler(call):
             return
         show_masters(0, 0, masters, call.from_user.id)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'choose_service ' in call.data:
         data = call.data.split(' ')
-        check_time_slot(data[1], call, data[2])
+        # check_time_slot(data[1], call, data[2])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
-    elif 'order_time_slot' in call.data:
-        bot.delete_message(call.from_user.id, call.message.message_id)
+
+    elif 'set_working_days' in call.data:
         data = call.data.split(' ')
-        bot.send_message(call.from_user.id, 'предоплата', reply_markup=buttons.to_menu())
-        try:
-            create_order(data[1], call.from_user.id, data[3], data[2])
-        except Exception as ex:
-            logging.error(f'Could not create order. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
-            return
-        set_busy_time_slot(data[1])
-        bot.answer_callback_query(call.id, text="Заявку створено")
+        set_working_days(call, False, data[1])
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
+    elif 'add_working_day' in call.data:
+        data = call.data.split(' ')
+        create_working_day(call.from_user.id, data[1])
+        set_working_days(call, True, data[2])
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
     elif call.data == 'pre_check_order':
         keyboard = buttons.client_check_order_buttons()
         bot.send_message(call.from_user.id, 'Оберіть опцію', reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
-    elif 'check_order_client' in call.data:
-        data = call.data.split(' ')
-        try:
-            orders = get_orders_for_client(call.from_user.id, data[1])
-        except Exception as ex:
-            logging.error(f'Could not get orders for client. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
-            return
-        if orders.__len__() < 1:
-            bot.answer_callback_query(call.id, text="Замовлення не знайденні")
-            return
-        try:
-            show_orders(orders, call.from_user.id, False)
-        except Exception as ex:
-            logging.error(f'Could not show orders. Cause: {ex}')
-            return
-        bot.answer_callback_query(call.id, text=" ", show_alert=False)
-    elif 'check_order_master' in call.data:
-        data = call.data.split(' ')
-        try:
-            orders = get_orders_for_master(call.from_user.id, data[1])
-        except Exception as ex:
-            logging.error(f'Could not get orders for master. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
-            return
-        if orders.__len__() < 1:
-            bot.answer_callback_query(call.id, text="Замовлення не знайденні")
-            return
-        try:
-            show_orders(orders, call.from_user.id, True)
-        except Exception as ex:
-            logging.error(f'Could not show orders. Cause: {ex}. Time: {time.asctime()}')
-            return
-        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
+    # elif 'check_order_client' in call.data:
+    #     data = call.data.split(' ')
+    #     try:
+    #         orders = get_orders_for_client(call.from_user.id, data[1])
+    #     except Exception as ex:
+    #         logging.error(f'Could not get orders for client. Cause: {ex}. Time: {time.asctime()}')
+    #         session.rollback()
+    #         return
+    #     if orders.__len__() < 1:
+    #         bot.answer_callback_query(call.id, text="Замовлення не знайденні")
+    #         return
+    #     try:
+    #         show_orders(orders, call.from_user.id, False)
+    #     except Exception as ex:
+    #         logging.error(f'Could not show orders. Cause: {ex}')
+    #         return
+    #     bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
+    # elif 'check_order_master' in call.data:
+    #     data = call.data.split(' ')
+    #     try:
+    #         orders = get_orders_for_master(call.from_user.id, data[1])
+    #     except Exception as ex:
+    #         logging.error(f'Could not get orders for master. Cause: {ex}. Time: {time.asctime()}')
+    #         session.rollback()
+    #         return
+    #     if orders.__len__() < 1:
+    #         bot.answer_callback_query(call.id, text="Замовлення не знайденні")
+    #         return
+    #     try:
+    #         show_orders(orders, call.from_user.id, True)
+    #     except Exception as ex:
+    #         logging.error(f'Could not show orders. Cause: {ex}. Time: {time.asctime()}')
+    #         return
+    #     bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'mark_as_done' in call.data:
         data = call.data.split(' ')
         try:
@@ -465,25 +509,31 @@ def callback_handler(call):
             session.rollback()
             return
         bot.answer_callback_query(call.id, text="Відмічено!")
+
     elif call.data == 'pre_check_order':
         keyboard = buttons.client_check_order_buttons()
         bot.send_message(call.from_user.id, 'Оберіть, що ви хочете переглянути:',
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'edit_profile' in call.data:
         data = call.data.split(' ')
         edit_profile(call.from_user.id, data[1])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
     elif 'profile_edit' in call.data:
         data = call.data.split(' ')
+
         if data[1] == 'name':
             bot.send_message(call.from_user.id, "Введіть своє ім'я"
                                                 "(можна латиницею) і натисніть Enter ↩")
             bot.register_next_step_handler(message=call.message, call_id=call.id, callback=edit_name, role=data[2])
+
         elif data[1] == 'phone':
             bot.send_message(call.from_user.id, "Тепер надішліть свій телефон ☎️",
                              reply_markup=buttons.send_contact())
             bot.register_next_step_handler(message=call.message, callback=edit_telephone, role=data[2])
+
         elif data[1] == 'tg_link':
             try:
                 update_user_name(call.from_user.id, call.from_user.username, role=data[2])
@@ -492,41 +542,50 @@ def callback_handler(call):
                 session.rollback()
                 return
             bot.answer_callback_query(call.id, text="Змінено")
+
         elif data[1] == 'card':
             bot.send_message(call.from_user.id,
                              'Напишіть номер картки, на яку '
                              'будуть надходити кошти.\n\n'
                              'Також рекомендую видалити його з чату 😉')
             bot.register_next_step_handler(message=call.message, call_id=call.id, callback=edit_card)
+
         elif data[1] == 'placement':
             user_instance = get_master(call.from_user.id)
             data = buttons.set_placement_buttons(user_instance[0].city_id, '')
             bot.send_message(call.from_user.id, data[0],
                              reply_markup=data[1])
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
         elif data[1] == 'edit_city':
             keyboard = buttons.city_buttons(data[2], '1')
             bot.send_message(call.from_user.id, "Оберіть Ваше місто🌆:", reply_markup=keyboard)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
         elif data[1] == 'details':
             bot.send_message(call.from_user.id, 'Напишіть опис до аккаунту, '
                                                 'що ви вмієте і тд.')
             bot.register_next_step_handler(message=call.message, call_id=call.id, callback=edit_details)
+
         elif data[1] == 'photo':
             bot.send_message(call.from_user.id, 'Відправте мені ваше фото')
             bot.register_next_step_handler(message=call.message, reg='', callback=set_acc_photo)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'edit_service' in call.data:
         data = call.data.split(' ')
         keyboard = buttons.edit_service(call.from_user.id, data[1])
+
         if keyboard is None:
             bot.answer_callback_query(call.id, text="Послуг не додано(")
             return
+
         bot.send_message(call.from_user.id, 'Оберіть послугу, що хочете змінити🛠',
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'update_service' in call.data:
         data = call.data.split(' ')
         bot.delete_message(call.from_user.id, call.message.message_id)
@@ -535,12 +594,14 @@ def callback_handler(call):
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'update_price' in call.data:
         data = call.data.split(' ')
         bot.send_message(call.from_user.id, 'Напишіть нову ціну послуги💸')
         bot.register_next_step_handler(call.message, set_money_cost, data[1], data[2])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'update_time_cost' in call.data:
         data = call.data.split(' ')
         bot.send_message(call.from_user.id, 'Напишіть тривалість послуги⏳')
@@ -548,6 +609,7 @@ def callback_handler(call):
                                        service_id=data[1], segment=data[2])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'delete_service' in call.data:
         data = call.data.split(' ')
         bot.delete_message(call.from_user.id, call.message.message_id)
@@ -562,6 +624,7 @@ def callback_handler(call):
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'edit_sample_services' in call.data:
         data = call.data.split(' ')
         try:
@@ -572,18 +635,21 @@ def callback_handler(call):
             return
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'edit_sample_serv_name' in call.data:
         data = call.data.split(' ')
         bot.send_message(call.from_user.id, 'Напишіть назву послуги')
         bot.register_next_step_handler(call.message, edit_sample_service_name, data[1])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'edit_sample_serv_photo' in call.data:
         data = call.data.split(' ')
         bot.send_message(call.from_user.id, 'Відправте нову фотографію')
         bot.register_next_step_handler(call.message, edit_sample_service_photo, data[1])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'del_sample_service' in call.data:
         data = call.data.split(' ')
         try:
@@ -595,10 +661,12 @@ def callback_handler(call):
             return
         services = get_sample_services(call.from_user.id)
         end_index = services.__len__() - 1
+
         if end_index == -1:
             to_menu(call)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
+
         index = 0
         try:
             show_services(index, end_index, services, call.from_user.id)
@@ -607,6 +675,7 @@ def callback_handler(call):
             return
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'edit_certificate' in call.data:
         data = call.data.split(' ')
         try:
@@ -617,18 +686,21 @@ def callback_handler(call):
             return
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'edit_cer_description' in call.data:
         data = call.data.split(' ')
         bot.send_message(call.from_user.id, 'Напишіть новий опис')
         bot.register_next_step_handler(call.message, edit_certificate_description, data[1])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'edit_cer_photo' in call.data:
         data = call.data.split(' ')
         bot.send_message(call.from_user.id, 'Відправте нову фотографію')
         bot.register_next_step_handler(call.message, edit_certificate_photo, data[1])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'del_cer' in call.data:
         data = call.data.split(' ')
         try:
@@ -640,10 +712,12 @@ def callback_handler(call):
             return
         certificates = get_certificates(call.from_user.id)
         end_index = certificates.__len__() - 1
+
         if end_index == -1:
             to_menu(call)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
+
         index = 0
         try:
             show_certificates(index, end_index, certificates, call.from_user.id)
@@ -652,23 +726,28 @@ def callback_handler(call):
             return
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'send_rating' in call.data:
         data = call.data.split(' ')
         keyboard = buttons.set_rating_buttons(data[1])
         bot.send_message(call.from_user.id, 'Оцініть роботу майстра 🤩', reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'set_rating' in call.data:
         keyboard = buttons.to_completed_services()
         bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
         response = create_rating(master_id=data[2], client_id=call.from_user.id, point=int(data[1]))
+
         if response is None:
             bot.send_message(call.from_user.id, 'Ви вже оцінювали цього майстра!', reply_markup=keyboard)
         else:
             bot.send_message(call.from_user.id, 'Дякую за вігук ☺', reply_markup=keyboard)
+
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
+
     elif 'send_feedback' in call.data:
         data = call.data.split(' ')
         try:
@@ -676,6 +755,7 @@ def callback_handler(call):
         except Exception as ex:
             logging.error(f'Could not check feedback. Cause: {ex}. Time: {time.asctime()}')
             return
+
         if flag:
             bot.send_message(call.from_user.id, 'Напишіть відгук про майстра *повідомлення не повинно містити'
                                                 ' емодзі')
@@ -683,18 +763,144 @@ def callback_handler(call):
         else:
             bot.answer_callback_query(call.id, text="Ви вже написали відгук про цього майстра")
             return
+
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
 
+    elif call.data == 'del_than_menu':
+        bot.delete_message(call.from_user.id, call.message.message_id)
+        to_menu(call)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
-def set_working_days(user_id):
+    elif call.data == 'set_working_time':
+        bot.send_message(call.from_user.id,
+                         'Напишіть години, коли Ви працюєте. Наприклад,'
+                         ' 9-00-18-00, де \n 9-00 - початок робочого дня, 18-00'
+                         ' закінчення. Ці години будуть застосовані для'
+                         ' всіх робочих днів. В меню "Налаштувати робочий час"'
+                         ' Ви завжди можете змінити час для кожного дня'
+                         ' окремо.')
+        bot.register_next_step_handler(call.message, set_working_time, call)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
+    elif 'edit_working_day' in call.data:
+        data = call.data.split(' ')
+
+        if data[1] == 'start':
+            keyboard = buttons.edit_working_day(data[2])
+            bot.send_message(call.from_user.id, 'Оберіть, що хочете змінити⚙',
+                             reply_markup=keyboard)
+            bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
+        elif data[1] == 'update_time':
+            bot.send_message(call.from_user.id,
+                             'Напишіть години, коли Ви працюєте. Наприклад,'
+                             ' 9-00-18-00, де \n 9-00 - початок робочого дня, 18-00'
+                             ' закінчення.')
+            bot.register_next_step_handler(call.message, update_time, data[2], call)
+
+        elif data[1] == 'set_non_active':
+            try:
+                response = edit_day(data[2], non_active=True)
+            except Exception as ex:
+                logging.error(f'Could not update working hours. Cause: {ex}. Time: {time.asctime()}')
+                return
+            if response is None:
+                logging.error('edit_day method: unknown option')
+
+            set_working_days(call, False, 'show')
+
+        elif data[1] == 'set_active':
+            try:
+                response = edit_day(data[2], active=True)
+            except Exception as ex:
+                logging.error(f'Could not update working hours. Cause: {ex}. Time: {time.asctime()}')
+                return
+            if response is None:
+                logging.error('edit_day method: unknown option')
+
+            set_working_days(call, False, 'show')
+
+
+def update_time(message, day_id, call):
+
+    if not calculations.regex_time(message):
+        bot.send_message(message.chat.id, 'Невірний формат часу, спробуйте ще раз. '
+                                          '(Приклад: 9-00-18-00)')
+        bot.register_next_step_handler(message, update_time, day_id, call)
+        return
+
+    if not calculations.check_time(message.text):
+        bot.send_message(message.chat.id, 'Час початку не може буду більшим за час кінця робочого дня, '
+                                          'спробуйте ще раз.')
+        bot.register_next_step_handler(message, update_time, day_id, call)
+        return
+
     try:
-        days = get_days(user_id)
+        response = edit_day(day_id, set_time=True, time=message.text)
+    except Exception as ex:
+        logging.error(f'Could not update working hours. Cause: {ex}. Time: {time.asctime()}')
+        return
+
+    if response is None:
+        logging.error('edit_day method: unknown option')
+
+    set_working_days(call, False, 'show')
+
+
+def set_working_time(message, call):
+    if not calculations.regex_time(message):
+        bot.send_message(message.chat.id, 'Невірний формат часу, спробуйте ще раз. '
+                                          '(Приклад: 9-00-18-00)')
+        bot.register_next_step_handler(message, set_working_time, call)
+        return
+    if not calculations.check_time(message.text):
+        bot.send_message(message.chat.id, 'Час початку не може буду більшим за час кінця робочого дня, '
+                                          'спробуйте ще раз.')
+        bot.register_next_step_handler(message, set_working_time, call)
+        return
+    try:
+        update_working_time(message.from_user.id, message.text)
+    except Exception as ex:
+        logging.error(f'Could not set working time. Cause: {ex}, Time: {time.asctime()}')
+        return
+    bot.send_message(call.from_user.id, 'Час виставлено!⏱')
+    to_menu(call)
+
+
+def set_working_days(call, again, option):
+    try:
+        days = get_days(call.from_user.id)
     except Exception as ex:
         logging.error(f'Could not get master working days from db. Cause: {ex}. Time: {time.asctime()}')
         return
-    keyboard = buttons.working_days_buttons(days)
-    bot.send_message(user_id, "Оберіть дні, по яким Ви працюєте👩‍⚕", reply_markup=keyboard)
+
+    if option == 'show':
+        keyboard = buttons.working_days_buttons(days, option)
+        bot.send_message(call.from_user.id, keyboard[0], reply_markup=keyboard[1])
+        return
+
+    elif option == 'add':
+        keyboard = buttons.working_days_buttons(days, option)
+
+        if again:
+            bot.edit_message_reply_markup(call.from_user.id, call.message.message_id,
+                                          reply_markup=keyboard)
+        else:
+            bot.send_message(call.from_user.id, "Оберіть дні, по яким Ви працюєте👩‍⚕",
+                             reply_markup=keyboard)
+        return
+
+    elif option == 'edit':
+        keyboard = buttons.working_days_buttons(days, option)
+
+        if keyboard is None:
+            bot.send_message(call.from_user.id, 'Робочі дні не знайдені!')
+            set_working_days(call, False, 'show')
+            return
+        bot.send_message(call.from_user.id, 'Оберіть день, який хочете редагувати',
+                         reply_markup=keyboard)
+        return
 
 
 def add_new_service(call):
@@ -706,6 +912,7 @@ def add_new_service(call):
 
 def set_feedback(message, user_id, master_id, call):
     keyboard = buttons.to_completed_services()
+
     if message.text is None:
         bot.send_message(user_id, 'Неправильний формат тексту(')
         to_menu(call)
@@ -716,12 +923,14 @@ def set_feedback(message, user_id, master_id, call):
         except Exception as ex:
             logging.error(f'Could not create feedback. Cause: {ex}. Time: {time.asctime()}')
             return
+
     bot.send_message(call.from_user.id, 'Дякую за вігук ☺', reply_markup=keyboard)
     return
 
 
 def delete_service_image(service_id, user_id):
     service_instance = get_sample_service_by_id(service_id)
+
     if service_instance[0].image is not None:
         try:
             os.remove(data_path + str(user_id) + '\\services\\' +
@@ -732,6 +941,7 @@ def delete_service_image(service_id, user_id):
 
 def delete_certificate_image(certificate_id, user_id):
     certificate_instance = get_certificate_by_id(certificate_id)
+
     if certificate_instance[0].image is not None:
         try:
             os.remove(data_path + str(user_id) + '\\certificates\\' +
@@ -751,6 +961,7 @@ def edit_certificate_description(message, certificate_id):
         bot.send_message(message.from_user.id, 'Неправильний формат вводу,'
                                                ' напишіть назву послуги')
         bot.register_next_step_handler(message, edit_certificate_description, certificate_id)
+
     try:
         update_certificate_description(certificate_id, message.text)
     except Exception as ex:
@@ -771,12 +982,15 @@ def edit_certificate_photo(message, certificate_id):
                                                " потрібно у форматі фотографії!)")
         bot.register_next_step_handler(message, edit_certificate_photo)
         return
+
     if certificate_instance.__len__() < 1:
         return
+
     if certificate_instance[0].image is not None:
         ran = certificate_instance[0].image
     else:
         ran = gen_path(message, 'certificates')
+
     try:
         update_certificate_photo(message, ran, False, photo)
     except Exception as ex:
@@ -788,10 +1002,12 @@ def edit_certificate_photo(message, certificate_id):
 def update_certificate_photo(message, ran, create, photo):
     if not os.path.exists(data_path + str(message.from_user.id) + '\\certificates'):
         os.makedirs(data_path + str(message.from_user.id) + '\\certificates')
+
     with open(data_path + str(message.from_user.id) + '\\certificates\\' +
               str(ran) + '.jpg', 'wb') as file:
         file.write(photo)
     image = str(ran)
+
     if create:
         try:
             create_certificate(message.from_user.id, image)
@@ -807,10 +1023,12 @@ def to_menu(call):
     try:
         if get_user_role(call.from_user.id):
             user_instance = get_master(call.from_user.id)
+
             if user_instance[0].cur_role:
                 keyboard = buttons.master_menu_1(call.from_user.id)
             else:
                 keyboard = buttons.client_menu('master')
+
         else:
             keyboard = buttons.client_menu('client')
     except Exception as ex:
@@ -839,12 +1057,15 @@ def edit_sample_service_photo(message, service_id):
                                                " потрібно у форматі фотографії!)")
         bot.register_next_step_handler(message, edit_sample_service_photo, service_id)
         return
+
     if service_instance.__len__() < 1:
         return
+
     if service_instance[0].image is not None:
         ran = service_instance[0].image
     else:
         ran = gen_path(message, 'services')
+
     try:
         update_samp_serv_photo(message, service_id, ran, photo)
     except Exception as ex:
@@ -856,6 +1077,7 @@ def edit_sample_service_photo(message, service_id):
 def update_samp_serv_photo(message, service_id, ran, photo):
     if not os.path.exists(data_path + str(message.from_user.id) + '\\services'):
         os.makedirs(data_path + str(message.from_user.id) + '\\services')
+
     with open(data_path + str(message.from_user.id) + '\\services\\' +
               str(ran) + '.jpg', 'wb') as file:
         file.write(photo)
@@ -872,6 +1094,7 @@ def edit_sample_service_name(message, service_id):
         bot.send_message(message.from_user.id, 'Неправильний формат вводу,'
                                                ' напишіть назву послуги')
         bot.register_next_step_handler(message, edit_sample_service_name, service_id)
+
     try:
         update_sample_service_name(service_id, message.text)
     except Exception as ex:
@@ -909,6 +1132,7 @@ def edit_telephone(message, role):
             update_telephone(message.from_user.id, message.contact.phone_number, role)
         else:
             update_telephone(message.from_user.id, message.text, role)
+
     except Exception as ex:
         logging.error(f'Could not update telephone. Cause: {ex}. Input: {message.text}. Time: {time.asctime()}')
         return
@@ -947,11 +1171,13 @@ def set_money_cost(message, service_id, segment, reg='1'):
         bot.send_message(message.chat.id, 'Це повинно бути число')
         bot.register_next_step_handler(message, set_money_cost, service_id, segment, reg)
         return
+
     try:
         update_service_cost(service_id, message.text)
     except Exception as ex:
         logging.error(f'Could not update service cost. Cause: {ex}. Input: {message.text}. Time: {time.asctime()}')
         return
+
     if reg == 'reg':
         bot.send_message(message.chat.id, 'Скільки процедура займає часу⏱? \n\n'
                                           '_Наприклад, 1-15 – це буде одна година, '
@@ -971,11 +1197,13 @@ def set_time_cost(message, service_id, segment, reg='1'):
                                           'година, 15 хвилин.')
         bot.register_next_step_handler(message, set_time_cost, service_id, segment, reg)
         return
+
     try:
         update_service_time_cost(service_id, data[0] + ':' + data[1])
     except Exception as ex:
         logging.error(f'Could not update service time cost. Cause: {ex}. Input: {message.text}. Time: {time.asctime()}')
         return
+
     if reg == 'reg':
         keyboard = buttons.to_menu()
         keyboard.add(buttons.back())
@@ -991,40 +1219,35 @@ def show_orders(orders, user_id, master_flag):
         keyboard = buttons.empty_template()
         try:
             service = get_service_by_id(order.service_id)
-            time_slot = get_time_slot_by_id(order.time_slot_id)
             master = get_master(order.master_id)
         except Exception as ex:
             logging.error(f'Could not get data. Func: show_orders. Cause: {ex}. Time: {time.asctime()}')
             return
         prepaid = 'Так' if order.prepaid else 'Ні'
+
         if not master_flag:
             try:
+
                 if check_rating(user_id, order.master_id) and order.done:
                     keyboard.add(buttons.rating_button(order.master_id))
+
                 if check_feedback(user_id, order.master_id) and order.done:
                     keyboard.add(buttons.feedback_button(order.master_id))
+
             except Exception as ex:
                 logging.error(f'Could not check rating or feedback. Cause: {ex}. Time: {time.asctime()}')
                 return
+
         elif master_flag and not order.done:
             keyboard.add(buttons.mark_as_done(order.id))
         bot.send_message(user_id, f'`Назва послуги:` {str(service[0].name)} \n'
                                   f"`Ім'я майстра:` {str(master[0].name)} \n"
                                   f"`Телефон майстра:` {str(master[0].telephone)} \n"
-                                  f"`Дата:` {str(time_slot[0].date)} \n"
-                                  f"`Початок о:` {str(time_slot[0].start_time)} \n"
+        # f"`Дата:` {str(time_slot[0].date)} \n"
+        # f"`Початок о:` {str(time_slot[0].start_time)} \n"
                                   f"`Передплачено: ` {str(prepaid)} \n",
                          reply_markup=keyboard, parse_mode='markdown')
     bot.send_message(user_id, 'Повернутись у меню', reply_markup=buttons.to_menu())
-
-
-def check_time_slot(data, call, service_id):
-    keyboard = buttons.time_slots_buttons(data, call.from_user.id, service_id)
-    if keyboard is None:
-        bot.answer_callback_query(call.id, text="На жаль, "
-                                                "вільних тайм слотів недодано :(")
-        return
-    bot.send_message(call.from_user.id, keyboard[0], reply_markup=keyboard[1])
 
 
 def registration(message, role):
@@ -1041,8 +1264,10 @@ def set_name(message, role):
         return
     try:
         create_user_role(message.from_user.id)
+
         if role == 'master':
             update_master_flag(message.from_user.id)
+
     except Exception as ex:
         logging.error(f'Could not create user role, or update user to master. Cause: {ex}. Time: {time.asctime()}')
         return
@@ -1053,10 +1278,12 @@ def set_name(message, role):
 
 def set_telephone(message, role):
     try:
+
         if message.contact is not None:
             update_telephone(message.from_user.id, message.contact.phone_number, role)
         else:
             update_telephone(message.from_user.id, message.text, role)
+
     except Exception as ex:
         logging.error(f'Could not set telephone. Cause: {ex}. Time: {time.asctime()}')
         return
@@ -1083,6 +1310,7 @@ def set_acc_photo(message, reg):
     except Exception as ex:
         logging.error(f'Could not set acc photo (Line: 1067). Cause: {ex}. Time: {time.asctime()}')
         return
+
     if reg == 'reg':
         bot.send_message(message.from_user.id,
                          'Напишіть номер картки, на яку будуть '
@@ -1120,6 +1348,7 @@ def show_profile(user_id, role):
     keyboard = buttons.empty_template()
     keyboard.add(buttons.back_and_delete())
     keyboard.add(buttons.edit_profile(role))
+
     if role == 'master':
         try:
             instance = get_master(user_id)
@@ -1202,7 +1431,9 @@ def add_sample_service(message):
         bot.send_message(message.from_user.id, 'Неправильний формат вводу, напишіть, будь ласка, назву послуги')
         bot.register_next_step_handler(message, add_sample_service)
         return
+
     check = check_service(message.text, message.from_user.id)
+
     if check:
         service_id = create_sample_service(message.from_user.id, message.text)
     else:
@@ -1210,6 +1441,7 @@ def add_sample_service(message):
                                                ' пропоную змініти назву!')
         bot.register_next_step_handler(message, add_sample_service)
         return
+
     bot.send_message(message.from_user.id, 'Відправте фото прикладу роботи')
     bot.register_next_step_handler(message=message, service_id=service_id, callback=set_service_photo)
 
@@ -1217,9 +1449,11 @@ def add_sample_service(message):
 def gen_path(message, path):
     while True:
         ran = str(message.from_user.id) + '_' + str(random.randint(1000, 9999))
+
         if not os.path.exists(data_path + str(message.from_user.id) + '\\' + str(path) + '\\' +
                               str(ran) + '.jpg'):
             break
+
     return ran
 
 
@@ -1288,42 +1522,15 @@ def show_masters(index, end_index, masters, user_id):
                    parse_mode='markdown')
 
 
-def set_start_time(message, date):
-    if not re.match(r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$', message.text):
-        bot.send_message(message.chat.id, 'Невірний формат часу, спробуйте ще раз. '
-                                          '(Приклад: 9:00, 14:20)')
-        bot.register_next_step_handler(message=message, date=date, callback=set_start_time)
-        return
-    bot.send_message(message.chat.id, 'Напишіть час кінця вільного тайм слоту. '
-                                      '(Приклад: 9:00, 14:20): ')
-    bot.register_next_step_handler(message=message, start_time=message.text,
-                                   date=date, callback=set_end_time)
-    return
-
-
-def set_end_time(message, start_time, date):
-    if not re.match(r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$', message.text):
-        bot.send_message(message.chat.id, 'Невірний формат часу, спробуйте ще раз. '
-                                          '(Приклад: 9:00, 14:20)')
-        bot.register_next_step_handler(message=message, start_time=start_time, date=date, callback=set_end_time)
-        return
-    try:
-        create_time_slot(user_id=message.from_user.id, start_time=start_time,
-                         end_time=message.text, date=date)
-    except Exception as ex:
-        logging.error(f'Could not create time slot. Cause: {ex}. Time: {time.asctime()}')
-        return
-    keyboard = buttons.to_menu()
-    bot.send_message(message.from_user.id, 'Додано!', reply_markup=keyboard)
-    return
-
-
 bot.enable_save_next_step_handlers(delay=2)
+
+
 # bot.load_next_step_handlers()
 
 
 def check_start_ud_data():
     cities = get_cities()
+
     if cities.__len__() < 1:
         os.system('mysqlsh -uroot -fdata.sql')
     else:
@@ -1337,4 +1544,3 @@ if __name__ == '__main__':
         bot.polling(none_stop=True)
     except Exception as e:
         logging.error(f'Could not start a bot. Cause: {e}. Time: {time.asctime()}')
-

@@ -191,18 +191,8 @@ def get_sample_services(tg_id):
     return session.query(Services).filter(Services.master_id == tg_id).all()
 
 
-def create_time_slot(user_id, start_time, end_time, date):
-    instance = Time_slot(master_id=user_id, start_time=start_time, end_time=end_time, date=date)
-    session.add(instance)
-    session.commit()
-
-
 def get_masters(placement_id):
     return session.query(Master).filter(Master.placement_id == placement_id).all()
-
-
-def get_time_slots(user_id):
-    return session.query(Time_slot).filter(Time_slot.master_id == user_id, Time_slot.ordered == '0').all()
 
 
 def save_master(master_id, user_id):
@@ -250,44 +240,10 @@ def get_master_by_id(master_id):
     return session.query(Master).filter(Master.user_id == master_id).all()
 
 
-def create_order(time_slot_id, client_id, master_id, service_id):
-    if get_user_role(client_id):
-        instance = Order(time_slot_id=time_slot_id, client_id_master_acc=client_id,
-                         master_id=master_id, service_id=service_id)
-    else:
-        instance = Order(time_slot_id=time_slot_id, client_id=client_id,
-                         master_id=master_id, service_id=service_id)
-    session.add(instance)
-    session.commit()
-
-
-def set_busy_time_slot(time_slot_id):
-    session.query(Time_slot).filter(Time_slot.id == time_slot_id). \
-        update({Time_slot.ordered: True}, synchronize_session=False)
-    session.commit()
-
-
-def get_orders_for_master(master_id, done):
-    return session.query(Order).filter(Order.master_id == master_id, Order.done == done, Order.canceled == '0').all()
-
-
 def update_order_as_done(order_id):
     session.query(Order).filter(Order.id == order_id). \
         update({Order.done: True}, synchronize_session=False)
     session.commit()
-
-
-def get_orders_for_client(client_id, done):
-    if get_user_role(client_id):
-        return session.query(Order).filter(Order.client_id_master_acc == client_id, Order.done == done,
-                                           Order.canceled == '0').all()
-    else:
-        return session.query(Order).filter(Order.client_id == client_id,
-                                           Order.done == done, Order.canceled == '0').all()
-
-
-def get_time_slot_by_id(time_slot_id):
-    return session.query(Time_slot).filter(Time_slot.id == time_slot_id).all()
 
 
 def check_rating(user_id, master_id):
@@ -360,7 +316,7 @@ def get_service_names(user_id, segment):
 
 
 def get_days(user_id):
-    data = session.query(Working_days.day_name).filter(Working_days.master_id == user_id).all()
+    data = session.query(Working_days).filter(Working_days.master_id == user_id).all()
     if data is None:
         return []
     else:
@@ -460,6 +416,38 @@ def move_user(user_id):
     session.add(instance)
     session.commit()
     update_to_master(user_id)
+
+
+def create_working_day(user_id, day_name):
+    instance = Working_days(master_id=user_id, day_name=day_name)
+    session.add(instance)
+    session.commit()
+
+
+def update_working_time(user_id, time):
+    session.query(Working_days).filter(Working_days.master_id == user_id). \
+        update({Working_days.working_hours: time}, synchronize_session=False)
+    session.commit()
+
+def edit_day(day_id, non_active=False, set_time=False, time=None, active=False):
+    if non_active:
+        session.query(Working_days).filter(Working_days.id == day_id). \
+            update({Working_days.non_active: True}, synchronize_session=False)
+        session.commit()
+        return True
+    elif set_time:
+        session.query(Working_days).filter(Working_days.id == day_id). \
+            update({Working_days.working_hours: time}, synchronize_session=False)
+        session.commit()
+        return True
+    elif active:
+        session.query(Working_days).filter(Working_days.id == day_id). \
+            update({Working_days.non_active: False}, synchronize_session=False)
+        session.commit()
+        return True
+    else:
+        return None
+
 
 
 # if __name__ == '__main__':

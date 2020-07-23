@@ -76,7 +76,7 @@ def choose_role_reg():
 
 def back():
     return types.InlineKeyboardButton(text="Далі",
-                                      callback_data='add_service False')
+                                      callback_data='add_service')
 
 
 def choose_language_buttons():
@@ -129,9 +129,6 @@ def master_menu_1(user_id):
     callback_button = types.InlineKeyboardButton(text="Зарезервувати час",
                                                  callback_data=f'check_services {user_id} reservation')
     keyboard.add(callback_button)
-    callback_button = types.InlineKeyboardButton(text="Подивитись тайм слоти",
-                                                 callback_data='check_time_slot' + ' ' + str(user_id))
-    keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Подивитись чергу",
                                                  callback_data='check_order_master 0')
     keyboard.add(callback_button)
@@ -156,11 +153,7 @@ def master_menu_1(user_id):
 def master_menu_2():
     keyboard = types.InlineKeyboardMarkup()
     callback_button = types.InlineKeyboardButton(text="Налаштувати робочий час",
-                                                 callback_data='set_working_hours')
-    keyboard.add(callback_button)
-    callback_button = types.InlineKeyboardButton(text="Додати вільний тайм слот",
-                                                 # ---------------------------------------------------------------------
-                                                 callback_data='add_time_slot')
+                                                 callback_data='set_working_days show')
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Додати свої роботи",
                                                  callback_data='add_sample_service')
@@ -169,7 +162,7 @@ def master_menu_2():
                                                  callback_data='add_media')
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Додати послугу",
-                                                 callback_data='add_service True')
+                                                 callback_data='add_service')
     keyboard.add(callback_button)
 
     callback_button = types.InlineKeyboardButton(text="Подивитись виконані послуги",
@@ -185,27 +178,32 @@ def master_menu_2():
 
 
 def service_segments(master_id, add, res=None):
-    print(res)
     segments = methods.get_service_segments()
     keyboard = types.InlineKeyboardMarkup()
+
     if add:
         for segment in segments:
             callback_button = types.InlineKeyboardButton(text=stickers[segment.name] + ' ' + str(segment.name),
                                                          callback_data='service_segment ' + str(segment.id) + ' '
                                                                        + str(master_id))
+
             if str(segment.name) != 'Виділити вільний час':
                 keyboard.add(callback_button)
+
     else:
         for segment in segments:
             callback_button = types.InlineKeyboardButton(text=stickers[segment.name] + ' ' + str(segment.name),
                                                          callback_data='order_service ' + str(segment.id) + ' '
                                                                        + str(master_id) + ' ' +
                                                                        (res if res == 'reservation' else 'N'))
+
             if (str(segment.name) != 'Виділити вільний час') or \
                     (str(segment.name) == 'Виділити вільний час' and res is not None):
                 keyboard.add(callback_button)
+
     callback_button = types.InlineKeyboardButton(text="Меню",
                                                  callback_data='menu')
+
     keyboard.add(callback_button)
     return keyboard
 
@@ -257,6 +255,7 @@ def edit_profile(role):
 
 def moving_certificates_buttons(index, end_index, data_id, master_id, user_id):
     keyboard = types.InlineKeyboardMarkup()
+
     if str(user_id) == str(master_id):
         callback_button = types.InlineKeyboardButton(text="Редагувати",
                                                      callback_data='edit_certificate ' + str(data_id))
@@ -267,11 +266,13 @@ def moving_certificates_buttons(index, end_index, data_id, master_id, user_id):
     callback_button = types.InlineKeyboardButton(text="Повернутись",
                                                  callback_data='del_message')
     keyboard.add(callback_button)
+
     if int(index) < int(end_index):
         callback_button = types.InlineKeyboardButton(text="Далі",
                                                      callback_data='move_certificate ' + str(int(index) + 1) +
                                                                    ' ' + str(end_index) + ' ' + str(master_id))
         keyboard.add(callback_button)
+
     if int(index) > 0:
         callback_button = types.InlineKeyboardButton(text="Назад",
                                                      callback_data='move_certificate ' + str(int(index) - 1) +
@@ -282,6 +283,7 @@ def moving_certificates_buttons(index, end_index, data_id, master_id, user_id):
 
 def moving_services_buttons(index, end_index, data_id, master_id, user_id):
     keyboard = types.InlineKeyboardMarkup()
+
     if str(user_id) == str(master_id):
         callback_button = types.InlineKeyboardButton(text="Редагувати",
                                                      callback_data='edit_sample_services ' + str(data_id))
@@ -292,16 +294,19 @@ def moving_services_buttons(index, end_index, data_id, master_id, user_id):
     callback_button = types.InlineKeyboardButton(text=" Повернутись",
                                                  callback_data='del_message')
     keyboard.add(callback_button)
+
     if int(index) < int(end_index):
         callback_button = types.InlineKeyboardButton(text="Далі",
                                                      callback_data='move_services ' + str(int(index) + 1) +
                                                                    ' ' + str(end_index) + ' ' + str(master_id))
         keyboard.add(callback_button)
+
     if int(index) > 0:
         callback_button = types.InlineKeyboardButton(text="Назад",
                                                      callback_data='move_services ' + str(int(index) - 1) +
                                                                    ' ' + str(end_index) + ' ' + str(master_id))
         keyboard.add(callback_button)
+
     return keyboard
 
 
@@ -343,24 +348,26 @@ def edit_certificate_buttons(certificate_id, user_id):
     return keyboard
 
 
-def date_buttons():
-    keyboard = types.InlineKeyboardMarkup(row_width=3)
-    for i in range(0, 9, 3):
-        date_creation_1 = datetime.date.today() + datetime.timedelta(days=i)
-        date_creation_1 = date_creation_1.strftime("%y.%m.%d")
-        callback_button_1 = types.InlineKeyboardButton(text=str(date_creation_1),
-                                                       callback_data='date_create ' + str(date_creation_1))
-        date_creation_2 = datetime.date.today() + datetime.timedelta(days=i + 1)
-        date_creation_2 = date_creation_2.strftime("%y.%m.%d")
-        callback_button_2 = types.InlineKeyboardButton(text=str(date_creation_2),
-                                                       callback_data='date_create ' + str(date_creation_2))
-        date_creation_3 = datetime.date.today() + datetime.timedelta(days=i + 2)
-        date_creation_3 = date_creation_3.strftime("%y.%m.%d")
-        callback_button_3 = types.InlineKeyboardButton(text=str(date_creation_3),
-                                                       callback_data='date_create ' + str(date_creation_3))
-        keyboard.add(callback_button_1, callback_button_2, callback_button_3)
-    keyboard.add(back_and_delete())
-    return keyboard
+# def date_buttons():
+#     keyboard = types.InlineKeyboardMarkup(row_width=3)
+#
+#     for i in range(0, 9, 3):
+#         date_creation_1 = datetime.date.today() + datetime.timedelta(days=i)
+#         date_creation_1 = date_creation_1.strftime("%y.%m.%d")
+#         callback_button_1 = types.InlineKeyboardButton(text=str(date_creation_1),
+#                                                        callback_data='date_create ' + str(date_creation_1))
+#         date_creation_2 = datetime.date.today() + datetime.timedelta(days=i + 1)
+#         date_creation_2 = date_creation_2.strftime("%y.%m.%d")
+#         callback_button_2 = types.InlineKeyboardButton(text=str(date_creation_2),
+#                                                        callback_data='date_create ' + str(date_creation_2))
+#         date_creation_3 = datetime.date.today() + datetime.timedelta(days=i + 2)
+#         date_creation_3 = date_creation_3.strftime("%y.%m.%d")
+#         callback_button_3 = types.InlineKeyboardButton(text=str(date_creation_3),
+#                                                        callback_data='date_create ' + str(date_creation_3))
+#         keyboard.add(callback_button_1, callback_button_2, callback_button_3)
+#
+#     keyboard.add(back_and_delete())
+#     return keyboard
 
 
 def order_placement_buttons(city_id):
@@ -369,12 +376,14 @@ def order_placement_buttons(city_id):
     keyboard = types.InlineKeyboardMarkup(row_width=4)
     counter = 1
     buttons = []
+
     for place in placements:
         text += str(counter) + '. ' + place.name + ' ' + str(place.address) + '\n'
         callback_button = types.InlineKeyboardButton(text=counter,
                                                      callback_data='order_placement ' + str(place.id))
         counter += 1
         buttons.append(callback_button)
+
     keyboard.add(*buttons)
     return [text, keyboard, placements]
 
@@ -402,66 +411,75 @@ def moving_masters_buttons(index, end_index, master_id, placement_id):
     callback_button = types.InlineKeyboardButton(text="Меню",
                                                  callback_data='menu')
     keyboard.add(callback_button)
+
     if int(index) < int(end_index):
         callback_button = types.InlineKeyboardButton(text="Далі",
                                                      callback_data='move_masters ' + str(int(index) + 1) +
                                                                    ' ' + str(end_index) +
                                                                    ' ' + str(placement_id))
         keyboard.add(callback_button)
+
     if int(index) > 0:
         callback_button = types.InlineKeyboardButton(text="Назад",
                                                      callback_data='move_masters ' + str(int(index) - 1) +
                                                                    ' ' + str(end_index) +
                                                                    ' ' + str(placement_id))
         keyboard.add(callback_button)
+
     return keyboard
 
 
-def time_slots_buttons(master_id, user_id, service_id):
-    time_slots = methods.get_time_slots(master_id)
-    if time_slots.__len__() == 0:
-        return None
-    text = 'Вільні тайм слоти: \n'
-    keyboard = types.InlineKeyboardMarkup(row_width=4)
-    keyboard.add(types.InlineKeyboardButton(text="⬅ Повернутись",
-                                            callback_data='del_message'))
-    counter = 1
-    buttons = []
-    for slot in time_slots:
-        text += str(counter) + '. Починаючи з: ' + str(slot.start_time) + ' до: ' + str(slot.end_time) + \
-                '. Дата: ' + str(slot.date) + '\n'
-        callback_button = types.InlineKeyboardButton(text=counter,
-                                                     callback_data='order_time_slot ' + str(slot.id)
-                                                                   + ' ' + str(service_id) + ' ' + str(master_id))
-        counter += 1
-        buttons.append(callback_button)
-    if str(user_id) != str(master_id):
-        keyboard.add(*buttons)
-    else:
-        keyboard.add(master_back())
-    return [text, keyboard]
+# def time_slots_buttons(master_id, user_id, service_id):
+#     time_slots = methods.get_time_slots(master_id)
+#     if time_slots.__len__() == 0:
+#         return None
+#     text = 'Вільні тайм слоти: \n'
+#     keyboard = types.InlineKeyboardMarkup(row_width=4)
+#     keyboard.add(types.InlineKeyboardButton(text="⬅ Повернутись",
+#                                             callback_data='del_message'))
+#     counter = 1
+#     buttons = []
+#     for slot in time_slots:
+#         text += str(counter) + '. Починаючи з: ' + str(slot.start_time) + ' до: ' + str(slot.end_time) + \
+#                 '. Дата: ' + str(slot.date) + '\n'
+#         callback_button = types.InlineKeyboardButton(text=counter,
+#                                                      callback_data='order_time_slot ' + str(slot.id)
+#                                                                    + ' ' + str(service_id) + ' ' + str(master_id))
+#         counter += 1
+#         buttons.append(callback_button)
+#     if str(user_id) != str(master_id):
+#         keyboard.add(*buttons)
+#     else:
+#         keyboard.add(master_back())
+#     return [text, keyboard]
 
 
 def saved_masters(user_id):
     keyboard = types.InlineKeyboardMarkup(row_width=3)
     masters = methods.get_saved_masters(user_id)
+
     if masters.__len__() < 1:
         return None
+
     for master in masters:
         user = methods.get_master(master.master_id)
         callback_button = types.InlineKeyboardButton(text=user[0].name,
                                                      callback_data='sav_masters' + ' ' + str(user[0].user_id))
         keyboard.add(callback_button)
+
     return keyboard
 
 
 def get_services(master_id, user_id, segment):
     services = methods.get_services(master_id, segment)
+
     if services.__len__() < 1:
         return None
+
     text = ''
     counter = 1
     keyboard = types.InlineKeyboardMarkup()
+
     if str(master_id) == str(user_id):
         for service in services:
             money = service.money_cost + '₴' if service.money_cost is not None else 'не задано'
@@ -478,23 +496,28 @@ def get_services(master_id, user_id, segment):
                                                 callback_data='del_message'))
     else:
         text = 'Доступні послуги'
+
         for service in services:
             callback_button = types.InlineKeyboardButton(text=service.name,
                                                          callback_data='choose_service '
                                                                        + str(master_id) + ' ' + str(service.id))
             keyboard.add(callback_button)
+
         callback_button = types.InlineKeyboardButton(text="⬅ Повернутись",
                                                      callback_data='del_message')
         keyboard.add(callback_button)
+
     return [text, keyboard]
 
 
 def edit_service(user_id, segment):
     services = methods.get_services(user_id, segment)
+
     if services.__len__() < 1:
         return None
     keyboard = types.InlineKeyboardMarkup()
     for service in services:
+
         callback_button = types.InlineKeyboardButton(text=service.name,
                                                      callback_data='update_service ' + str(service.id) + ' '
                                                                    + str(segment))
@@ -555,18 +578,24 @@ def empty_template():
 def service_buttons(segment, services_name):
     keyboard = types.InlineKeyboardMarkup()
     data = [item[0] for item in services_name]
+
     if segment == '1':
         service = service_eyes
+
     elif segment == '2':
         service = service_nails
+
     elif segment == '3':
         service = service_haircut
+
     for service_name in service:
+
         if service_name not in data:
             callback_button = types.InlineKeyboardButton(text=service_name,
                                                          callback_data=f'add_instance {service_name}'
                                                                        + ' ' + str(segment))
             keyboard.add(callback_button)
+
     return keyboard
 
 
@@ -588,6 +617,7 @@ def edit_profile_buttons(role):
     callback_button = types.InlineKeyboardButton(text="Місто",
                                                  callback_data=f'profile_edit edit_city {role}')
     keyboard.add(callback_button)
+
     if role == 'master':
         callback_button = types.InlineKeyboardButton(text="Номер картки",
                                                      callback_data='profile_edit card')
@@ -601,21 +631,65 @@ def edit_profile_buttons(role):
         callback_button = types.InlineKeyboardButton(text="Змінити фото",
                                                      callback_data='profile_edit photo')
         keyboard.add(callback_button)
+
     callback_button = types.InlineKeyboardButton(text="Повернутись",
                                                  callback_data='menu')
     keyboard.add(callback_button)
     return keyboard
 
 
-def working_days_buttons(days_names):
-    keyboard = types.InlineKeyboardButton()
-    data = [item[0] for item in days_names]
-    for day in days:
-        if day not in data:
-            callback_button = types.InlineKeyboardButton(text=day,
-                                                         callback_data=f'add_working_day {day}')
-            keyboard.add(callback_button)
+def working_days_buttons(working_days, option):
+    keyboard = types.InlineKeyboardMarkup()
+    data = []
+    if working_days:
+        for i in range(working_days.__len__()):
+            data.append(working_days[i].day_name)
+    if option == 'add':
+        for day in days:
+            if day not in data:
+                callback_button = types.InlineKeyboardButton(text=day,
+                                                             callback_data=f'add_working_day {day} add')
+                keyboard.add(callback_button)
+        keyboard.add(types.InlineKeyboardButton(text="Налаштувати час",
+                                                callback_data='set_working_time'))
+        keyboard.add(types.InlineKeyboardButton(text="Меню",
+                                                callback_data='del_than_menu'))
+        return keyboard
+    elif option == 'show':
+        text = ''
+        counter = 1
+        for day in working_days:
+            text += str(counter) + f'. {day.day_name}. {day.working_hours if not day.non_active else "Неактивний"} \n'
+            counter += 1
+        keyboard.add(types.InlineKeyboardButton(text="Редагувати",
+                                                callback_data='set_working_days edit'))
+        keyboard.add(types.InlineKeyboardButton(text="Додати робочий день",
+                                                callback_data='set_working_days add'))
+        keyboard.add(types.InlineKeyboardButton(text="Меню",
+                                                callback_data='menu'))
+        if text == '':
+            text = 'Не додано жодного дня!'
+        return [text, keyboard]
+    elif option == 'edit':
+        if working_days.__len__() < 1:
+            return None
+        for day in working_days:
+            keyboard.add(types.InlineKeyboardButton(text=day.day_name, callback_data=f'edit_working_day start'
+                                                                                     f' {day.id}'))
+        return keyboard
+
+def edit_working_day(day_id):
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(types.InlineKeyboardButton(text="Змінити час",
+                                            callback_data=f'edit_working_day update_time {day_id}'))
+    keyboard.add(types.InlineKeyboardButton(text="Зробити неактивним",
+                                            callback_data=f'edit_working_day set_non_active {day_id}'))
+    keyboard.add(types.InlineKeyboardButton(text="Зробити активним",
+                                            callback_data=f'edit_working_day set_active {day_id}'))
+    keyboard.add(types.InlineKeyboardButton(text="Повернутись",
+                                            callback_data=f'set_working_days show'))
     return keyboard
+# def add_working_days(days_names)
 
 
 def reg_as_master():
