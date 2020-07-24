@@ -750,9 +750,10 @@ def set_hours(master_id, service_id, day_id, times):
                                                                    f' {day_id}'
                                                                    f' {time}')
         keyboard.add(callback_button)
-    keyboard.add(types.InlineKeyboardButton(text="Задати свій час", callback_data=f'reserve_day'
-                                                                                  f' {day_id}'
-                                                                                  f' {master_id}'
-                                                                                  f' {service_id} True'))
+    keyboard.add(types.InlineKeyboardButton(text="Задати свій час",
+                                            callback_data=f'reserve_day'
+                                                          f' {day_id}'
+                                                          f' {master_id}'
+                                                          f' {service_id} True'))
     keyboard.add(back_and_delete())
     return keyboard

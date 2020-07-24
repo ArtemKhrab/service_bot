@@ -486,23 +486,23 @@ def callback_handler(call):
     #         return
     #     bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
-    # elif 'check_order_master' in call.data:
-    #     data = call.data.split(' ')
-    #     try:
-    #         orders = get_orders_for_master(call.from_user.id, data[1])
-    #     except Exception as ex:
-    #         logging.error(f'Could not get orders for master. Cause: {ex}. Time: {time.asctime()}')
-    #         session.rollback()
-    #         return
-    #     if orders.__len__() < 1:
-    #         bot.answer_callback_query(call.id, text="Замовлення не знайденні")
-    #         return
-    #     try:
-    #         show_orders(orders, call.from_user.id, True)
-    #     except Exception as ex:
-    #         logging.error(f'Could not show orders. Cause: {ex}. Time: {time.asctime()}')
-    #         return
-    #     bot.answer_callback_query(call.id, text=" ", show_alert=False)
+    elif 'check_order_master' in call.data:
+        data = call.data.split(' ')
+        try:
+            orders = get_orders_for_master(call.from_user.id)
+        except Exception as ex:
+            logging.error(f'Could not get orders for master. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
+            return
+        if orders.__len__() < 1:
+            bot.answer_callback_query(call.id, text="Замовлення не знайденні")
+            return
+        try:
+            show_orders(orders, call.from_user.id, True)
+        except Exception as ex:
+            logging.error(f'Could not show orders. Cause: {ex}. Time: {time.asctime()}')
+            return
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
     elif 'mark_as_done' in call.data:
         data = call.data.split(' ')
@@ -1312,6 +1312,10 @@ def show_orders(orders, user_id, master_flag):
         try:
             service = get_service_by_id(order.service_id)
             master = get_master(order.master_id)
+            if order.client_id is None:
+                client = get_master(order.client_id_master_acc)
+            else:
+                client = get_client(order.client_id)
         except Exception as ex:
             logging.error(f'Could not get data. Func: show_orders. Cause: {ex}. Time: {time.asctime()}')
             return
@@ -1335,6 +1339,8 @@ def show_orders(orders, user_id, master_flag):
         bot.send_message(user_id, f'`Назва послуги:` {str(service[0].name)} \n'
                                   f"`Ім'я майстра:` {str(master[0].name)} \n"
                                   f"`Телефон майстра:` {str(master[0].telephone)} \n"
+                                  f"`Ім'я клієнта:` {str(client[0].name)} \n"
+                                  f"`Телефон клієнта:` {str(client[0].telephone)} \n"
                                   f"`Передплачено: ` {str(prepaid)} \n",
                          reply_markup=keyboard, parse_mode='markdown')
     bot.send_message(user_id, 'Повернутись у меню', reply_markup=buttons.to_menu())

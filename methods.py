@@ -493,6 +493,11 @@ def create_order(master_id, client_id, day_id, time_slot, service_id):
     session.commit()
 
 
+def get_orders_for_master(master_id):
+    return session.query(Order).filter(Order.master_id == master_id, Order.done == '0', Order.canceled_by_client == '0',
+                                       Order.canceled_by_master == '0', Order.canceled_by_system == '0').all()
+
+
 # if __name__ == '__main__':
 #     data = session.query(Service_type.name).filter(Service_type.master_id == '405423146',
 #                                             Service_type.segment_id == '1').all()
