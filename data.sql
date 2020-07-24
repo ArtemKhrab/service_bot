@@ -14,8 +14,6 @@ insert into bot.service_segment (name)values ('Нігтьовий сервіс')
 insert into bot.service_segment (name)values ('Перукарські послуги');
 insert into bot.service_segment (name)values ('Виділити вільний час');
 
-select  * from bot.service_segment;
-
 
 
 

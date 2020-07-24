@@ -445,7 +445,11 @@ def callback_handler(call):
 
     elif 'choose_service ' in call.data:
         data = call.data.split(' ')
-        show_working_days(call, data[1], data[2])
+        if data[3] == 'not_confirmed':
+            user_confirmation(call, data[1], data[2])
+        elif data[3] == 'confirmed':
+            bot.delete_message(call.from_user.id, call.message.message_id)
+            show_working_days(call, data[1], data[2])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
     elif 'set_working_days' in call.data:
@@ -791,6 +795,7 @@ def callback_handler(call):
             bot.send_message(call.from_user.id, 'Оберіть, що хочете змінити⚙',
                              reply_markup=keyboard)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
+            return
 
         elif data[1] == 'update_time':
             bot.send_message(call.from_user.id,
@@ -798,6 +803,8 @@ def callback_handler(call):
                              ' 9-00-18-00, де \n 9-00 - початок робочого дня, 18-00'
                              ' закінчення.')
             bot.register_next_step_handler(call.message, update_time, data[2], call)
+            bot.answer_callback_query(call.id, text=" ", show_alert=False)
+            return
 
         elif data[1] == 'set_non_active':
             try:
@@ -809,6 +816,8 @@ def callback_handler(call):
                 logging.error('edit_day method: unknown option')
 
             set_working_days(call, False, 'show')
+            bot.answer_callback_query(call.id, text=" ", show_alert=False)
+            return
 
         elif data[1] == 'set_active':
             try:
@@ -820,6 +829,73 @@ def callback_handler(call):
                 logging.error('edit_day method: unknown option')
 
             set_working_days(call, False, 'show')
+            bot.answer_callback_query(call.id, text=" ", show_alert=False)
+            return
+
+    elif 'reserve_day' in call.data:
+        data = call.data.split(' ')
+        day_det = get_day_details(data[1])
+        service_det = get_service_by_id(data[3])
+
+        if data[4] == 'True':
+            bot.delete_message(call.from_user.id, call.message.message_id)
+            bot.send_message(call.from_user.id,
+                             'Напишіть час, на який '
+                             'хочете записатися (формат: 13-00)')
+            bot.register_next_step_handler(call.message, get_time_slots, day_det, service_det, data[1], data[2],
+                                           data[3], call)
+            bot.answer_callback_query(call.id, text=" ", show_alert=False)
+            return
+
+        response = calculations.check_available_time(day_det, service_det)
+        keyboard = buttons.set_hours(data[2], data[3], data[1], response[0])
+        bot.send_message(call.from_user.id, response[1], reply_markup=keyboard)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
+
+    elif 'create_order' in call.data:
+        bot.delete_message(call.from_user.id, call.message.message_id)
+        data = call.data.split(' ')
+        order_creation(data[1], data[2], data[3], data[4], call)
+
+
+def order_creation(master_id, service_id, day_id, time_slot, call):
+    bot.send_message(call.from_user.id, 'Предоплата и тд...')
+    try:
+        create_order(master_id, call.from_user.id, day_id, time_slot, service_id)
+    except Exception as ex:
+        logging.error(f"Could not create order instance. Cause: {ex}. Time: {time.asctime()}")
+        print(ex)
+        return
+    bot.send_message(call.from_user.id, "Заявка створена!")
+    to_menu(call)
+
+
+def get_time_slots(message, day_det, service_det, day_id, master_id, service_id, call):
+
+    if not re.match(r'^([0-1]?[0-9]|2[0-3])-[0-5][0-9]$', message.text):
+        bot.send_message(message.chat.id, 'Формат часу: 1-15 – це буде одна '
+                                          'година, 15 хвилин.')
+        bot.register_next_step_handler(message, get_time_slots, service_det, day_id, master_id, service_id, call)
+        return
+
+    response = calculations.check_available_time(day_det, service_det, req=message.text, set_custom_time=True)
+    bot.send_message(message.chat.id, response[1])
+
+    if response[0] is not None:
+        order_creation(master_id, service_id, day_id, response[0], call)
+
+
+def user_confirmation(call, master_id, service_id):
+    keyboard = buttons.user_confirmation_buttons(master_id, service_id)
+    service = get_service_by_id(service_id)
+    master = get_master_by_id(master_id)
+    bot.send_message(call.from_user.id, f"Ім'я майстра: {master[0].name} \n"
+                                        f"Назва процедури: {service[0].name} \n"
+                                        f"Ціна процедури: {service[0].money_cost}₴ \n"
+                                        f"Тривалість процедури: годин - {service[0].time_cost.split('-')[0]}"
+                                        f", хвилин - {service[0].time_cost.split('-')[1]}",
+                     reply_markup=keyboard)
 
 
 def show_working_days(call, master_id, service_id):
@@ -829,12 +905,14 @@ def show_working_days(call, master_id, service_id):
         logging.error(f'Could not get available days. Cause: {ex}. Time: {time.asctime()}')
         return
     keyboard = buttons.reserve_day(days, master_id, service_id)
+
     if keyboard is None:
         keyboard = buttons.empty_template()
         keyboard.add(buttons.back_and_delete())
         bot.send_message(call.from_user.id, 'На жаль, доступних днів немає',
                          reply_markup=keyboard)
         return
+
     bot.send_message(call.from_user.id, 'Оберіть день:', reply_markup=keyboard)
 
 
@@ -1206,16 +1284,14 @@ def set_money_cost(message, service_id, segment, reg='1'):
 
 
 def set_time_cost(message, service_id, segment, reg='1'):
-    if re.match(r'^([0-1]?[0-9]|2[0-3])-[0-5][0-9]$', message.text):
-        data = message.text.split('-')
-    else:
+    if not re.match(r'^([0-1]?[0-9]|2[0-3])-[0-5][0-9]$', message.text):
         bot.send_message(message.chat.id, 'Формат часу: 1-15 – це буде одна '
                                           'година, 15 хвилин.')
         bot.register_next_step_handler(message, set_time_cost, service_id, segment, reg)
         return
 
     try:
-        update_service_time_cost(service_id, data[0] + ':' + data[1])
+        update_service_time_cost(service_id, message.text)
     except Exception as ex:
         logging.error(f'Could not update service time cost. Cause: {ex}. Input: {message.text}. Time: {time.asctime()}')
         return

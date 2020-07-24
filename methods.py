@@ -1,5 +1,7 @@
 from classes import *
 import buttons
+from datetime import datetime
+from datetime import timedelta
 
 def check_user(tg_id):
     response = session.query(User_role).filter_by(id=tg_id).all()
@@ -456,6 +458,40 @@ def get_available_days(master_id, current_day_num):
         return []
     else:
         return data
+
+
+def get_day_details(day_id):
+    day = session.query(Working_days).filter(Working_days.id == day_id).all()
+    orders = session.query(Order).filter(Order.day_id == day[0].id).order_by(asc(Order.time)).all()
+    if orders is None:
+        orders = []
+    return [day[0], orders]
+
+
+def create_order(master_id, client_id, day_id, time_slot, service_id):
+    try:
+        service = session.query(Service_type).filter(Service_type.id == service_id).all()
+    except:
+        return
+
+    service_time_cost = service[0].time_cost.split('-')
+    time_slot_start = time_slot.split('-')
+    time_item = datetime.now()
+    service_time = time_item.replace(hour=int(time_slot_start[0]), minute=int(time_slot_start[1]))
+    service_time = service_time + timedelta(hours=int(service_time_cost[0]), minutes=int(service_time_cost[1]))
+
+    if get_user_role(client_id):
+        instance = Order(master_id=master_id, client_id_master_acc=client_id, day_id=day_id,
+                         time=time_slot+f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
+                         money_cost=service[0].money_cost)
+    else:
+        instance = Order(master_id=master_id, client_id=client_id, day_id=day_id,
+                         time=time_slot+f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
+                         money_cost=service[0].money_cost)
+
+    session.add(instance)
+    session.commit()
+
 
 # if __name__ == '__main__':
 #     data = session.query(Service_type.name).filter(Service_type.master_id == '405423146',

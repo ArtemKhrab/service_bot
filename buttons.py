@@ -200,9 +200,7 @@ def service_segments(master_id, add, res=None):
                     (str(segment.name) == 'Виділити вільний час' and res is not None):
                 keyboard.add(callback_button)
 
-    callback_button = types.InlineKeyboardButton(text="Меню",
-                                                 callback_data='menu')
-
+    callback_button = back_and_delete()
     keyboard.add(callback_button)
     return keyboard
 
@@ -502,7 +500,8 @@ def get_services(master_id, user_id, segment, reservation):
         for service in services:
             callback_button = types.InlineKeyboardButton(text=service.name,
                                                          callback_data='choose_service '
-                                                                       + str(master_id) + ' ' + str(service.id))
+                                                                       + str(master_id) + ' ' + str(service.id)
+                                                                       + ' not_confirmed')
             keyboard.add(callback_button)
 
         callback_button = types.InlineKeyboardButton(text="⬅ Повернутись",
@@ -682,14 +681,18 @@ def working_days_buttons(working_days, option):
                                                                                      f' {day.id}'))
         return keyboard
 
+
 def reserve_day(working_days, master_id, service_id):
     keyboard = types.InlineKeyboardMarkup()
     if working_days.__len__() < 1:
         return None
     for day in working_days:
         keyboard.add(types.InlineKeyboardButton(text=day.day_name, callback_data=f'reserve_day'
-                                                                                 f' {day.id} {master_id}'
-                                                                                 f' {service_id}'))
+                                                                                 f' {day.id}'
+                                                                                 f' {master_id}'
+                                                                                 f' {service_id}'
+                                                                                 f' False'))
+    keyboard.add(back_and_delete())
     return keyboard
 
 
@@ -719,9 +722,37 @@ def reg_as_master():
     return keyboard
 
 
+def user_confirmation_buttons(master_id, service_id):
+    keyboard = types.InlineKeyboardMarkup()
+    callback_button1 = types.InlineKeyboardButton(text="Далі",
+                                                  callback_data=f'choose_service {master_id} {service_id} confirmed')
+    callback_button2 = types.InlineKeyboardButton(text="Повернутися",
+                                                  callback_data='del_message')
+    keyboard.add(callback_button1, callback_button2)
+    return keyboard
+
+
 def to_completed_services():
     keyboard = types.InlineKeyboardMarkup()
     callback_button = types.InlineKeyboardButton(text="Повернутись",
                                                  callback_data='check_order_client 1')
     keyboard.add(callback_button)
+    return keyboard
+
+
+def set_hours(master_id, service_id, day_id, times):
+    keyboard = types.InlineKeyboardMarkup()
+    for time in times:
+        callback_button = types.InlineKeyboardButton(text=time,
+                                                     callback_data=f'create_order'
+                                                                   f' {master_id}'
+                                                                   f' {service_id}'
+                                                                   f' {day_id}'
+                                                                   f' {time}')
+        keyboard.add(callback_button)
+    keyboard.add(types.InlineKeyboardButton(text="Задати свій час", callback_data=f'reserve_day'
+                                                                                  f' {day_id}'
+                                                                                  f' {master_id}'
+                                                                                  f' {service_id} True'))
+    keyboard.add(back_and_delete())
     return keyboard

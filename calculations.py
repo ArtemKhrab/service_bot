@@ -1,8 +1,7 @@
-import time
-import cmath
+
 import re
 from datetime import datetime
-import calendar
+from datetime import timedelta
 
 
 def check_time(t):
@@ -14,7 +13,7 @@ def check_time(t):
 
 
 def regex_time(message):
-    if not re.match(r'^([0-1]?[0-9]|2[0-3])-[0-5][0-9]-([0-1]?[0-9]|2[0-3])-[0-5][0-9]$', message.text):
+    if not re.match(r"^([0-1]?[0-9]|2[0-3])-[0-5][0-9]-([0-1]?[0-9]|2[0-3])-[0-5][0-9]$", message.text):
         return False
     else:
         return True
@@ -23,5 +22,86 @@ def regex_time(message):
 def get_current_day():
     return datetime.date(datetime.now()).weekday()
 
-if __name__ == '__main__':
-    print(calendar.day_name[get_current_day()])
+
+def check_available_time(day_det, service_det, req=None, set_custom_time=False):
+    now = datetime.now()
+    working_hours = day_det[0].working_hours.split('-')
+    orders = day_det[1]
+    service_time = service_det[0].time_cost.split('-')
+    time_item = datetime.now()
+    master_start_time = time_item.replace(hour=int(working_hours[0]), minute=int(working_hours[1]))
+    master_end_time = time_item.replace(hour=int(working_hours[2]), minute=int(working_hours[3]))
+    time_slots = []
+
+    if set_custom_time:
+        user_time = req.split('-')
+        user_time_start = time_item.replace(hour=int(user_time[0]), minute=int(user_time[1]))
+        user_time_end = user_time_start + timedelta(hours=int(service_time[0]), minutes=int(service_time[1]))
+
+        if master_start_time <= user_time_start and master_end_time >= user_time_end:
+
+            if not orders:
+                return [req, "Работает!!!!!!!!1"]
+            else:
+
+                for order in orders:
+                    order_time = order.time.split('-')
+                    order_start = time_item.replace(hour=int(order_time[0]), minute=int(order_time[1]))
+                    order_end = time_item.replace(hour=int(order_time[2]), minute=int(order_time[3]))
+                    if (order_start < user_time_start < order_end) or (order_start < user_time_end < order_end):
+                        return [None, "Занято"]
+
+                else:
+                    return [req, "Работает!!!!!2"]
+
+        else:
+            return [None,
+                    'Майстер не працьє в заданий час, або він не встигне виконати роботу, оберіть інший час']
+    else:
+
+        if not orders:
+            afternoon = time_item.replace(hour=12, minute=00)
+            if (master_start_time + timedelta(hours=int(service_time[0]), minutes=int(service_time[1]))) \
+                    <= master_end_time:
+                time_slots.append(str(master_start_time.strftime("%H-%M")))
+
+            if master_start_time <= afternoon and (afternoon + timedelta(hours=int(service_time[0]),
+                                                                         minutes=int(service_time[1]))) \
+                    <= master_end_time:
+                time_slots.append(str(afternoon.strftime("%H-%M")))
+
+            if (master_end_time - timedelta(hours=int(service_time[0]), minutes=int(service_time[1]))) \
+                    >= master_start_time:
+                time_slots.append(str((master_end_time - timedelta(hours=int(service_time[0]),
+                                                                   minutes=int(service_time[1]))).strftime(
+                    "%H-%M")))
+            return [time_slots, "Работает!!!!!!!3"]
+        else:
+            quantity = orders.__len__()-1
+            counter = 0
+            service_time_cost = time_item.replace(hour=int(service_time[0]), minute=int(service_time[1]))
+            for order in orders:
+                if counter == 0:
+                    order_time = order.time.split('-')
+                    order_start = time_item.replace(hour=int(order_time[0]), minute=int(order_time[1]))
+                    if (order_start - timedelta(hours=int(working_hours[0]),
+                                                minutes=int(working_hours[1]))) >= service_time_cost:
+                        time_slots.append(str(master_start_time.strftime("%H-%M")))
+
+                if counter == quantity:
+                    order_time = order.time.split('-')
+                    print(order_time)
+                    order_end = time_item.replace(hour=int(order_time[2]), minute=int(order_time[3]))
+                    if (master_end_time - timedelta(hours=int(order_time[2]),
+                                                    minutes=int(order_time[3]))) >= service_time_cost:
+                        time_slots.append(str(order_end.strftime("%H-%M")))
+                else:
+                    order_time = orders[counter].time.split('-')
+                    next_order_time = orders[counter + 1].time.split('-')
+                    next_order_start = time_item.replace(hour=int(next_order_time[0]), minute=int(next_order_time[1]))
+                    order_end = time_item.replace(hour=int(order_time[2]), minute=int(order_time[3]))
+                    if (next_order_start - timedelta(hours=int(order_time[2]), minutes=int(order_time[3]))) >= \
+                            service_time_cost:
+                        time_slots.append(str(order_end.strftime("%H-%M")))
+                counter += 1
+            return [time_slots, "Работает!!!!!!4"]

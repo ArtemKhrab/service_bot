@@ -1,6 +1,7 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import *
 from config import *
+import datetime
 
 Base = declarative_base()
 
@@ -139,10 +140,11 @@ class Order(Base):
     master_id = Column(String(25), ForeignKey(Master.user_id))
     service_id = Column(Integer, ForeignKey(Service_type.id))
     day_id = Column(Integer, ForeignKey(Working_days.id))
-    date = Column(Date)
-    time = Column(Time)
+    date = Column(DateTime, default=datetime.datetime.utcnow)
+    time = Column(String(11))
     prepaid = Column(Boolean, default=False)
     done = Column(Boolean, default=False)
+    money_cost = Column(String(6))
     canceled_by_client = Column(Boolean, default=False)
     canceled_by_master = Column(Boolean, default=False)
     canceled_by_system = Column(Boolean, default=False)
