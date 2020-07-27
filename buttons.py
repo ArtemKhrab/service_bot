@@ -179,6 +179,7 @@ def master_menu_1(user_id):
     callback_button = types.InlineKeyboardButton(text="Далі ➡",
                                                  callback_data='menu_2')
     keyboard.add(callback_button)
+    keyboard.add(back_and_delete())
     return keyboard
 
 
@@ -205,6 +206,7 @@ def master_menu_2():
     callback_button = types.InlineKeyboardButton(text="Назад ⬅",
                                                  callback_data='menu_1')
     keyboard.add(callback_button)
+    keyboard.add(back_and_delete())
     return keyboard
 
 
@@ -438,9 +440,7 @@ def moving_masters_buttons(index, end_index, master_id, placement_id, user_id):
         callback_button = types.InlineKeyboardButton(text="Обрати послугу",
                                                      callback_data='check_services' + ' ' + str(master_id))
         keyboard.add(callback_button)
-    callback_button = types.InlineKeyboardButton(text="Меню",
-                                                 callback_data='menu')
-    keyboard.add(callback_button)
+    keyboard.add(back_and_delete())
 
     if int(index) < int(end_index):
         callback_button = types.InlineKeyboardButton(text="Далі",
