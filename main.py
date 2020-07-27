@@ -489,7 +489,7 @@ def callback_handler(call):
     elif 'check_order_master' in call.data:
         data = call.data.split(' ')
         try:
-            orders = get_orders_for_master(call.from_user.id)
+            orders = get_orders_for_master(call.from_user.id, data[1])
         except Exception as ex:
             logging.error(f'Could not get orders for master. Cause: {ex}. Time: {time.asctime()}')
             session.rollback()
@@ -507,8 +507,8 @@ def callback_handler(call):
     elif 'mark_as_done' in call.data:
         data = call.data.split(' ')
         try:
-            update_order_as_done(data[1])
             bot.delete_message(call.from_user.id, int(data[2]))
+            update_order_as_done(data[1])
         except Exception as ex:
             logging.error(f'Could not update order as completed. Cause: {ex}. Time: {time.asctime()}')
             session.rollback()
@@ -519,7 +519,7 @@ def callback_handler(call):
     elif 'mark_as_canceled_by_master' in call.data:
         data = call.data.split(' ')
         try:
-            bot.delete_message(call.from_user.id, int(data[2]))
+
             update_order_as_canceled_by_master(data[1])
             order = get_order_by_id(data[1])
             master = get_master(order.master_id)
@@ -532,25 +532,33 @@ def callback_handler(call):
         start_time = order.time.split('-')
         prepaid = 'Так' if order.prepaid else 'Ні'
         if order.client_id is None:
-            bot.send_message(order.client_id_master_acc, f'Ваша бронь була відмінена майстром '
-                                                         f'{time.localtime().tm_hour}:{time.localtime().tm_min} '
-                                                         f'{time.localtime().tm_mon}.{time.localtime().tm_mday} \n'
-                                                         f"Ім'я майстра: {master[0].name} \n"
-                                                         f"Назва процедури: {service[0].name} \n"
-                                                         f"Час початку: {start_time[0]}-{start_time[1]} \n"
-                                                         f"Передплачено: {prepaid} \n\n\n"
-                                                         f"***Якщо процедура передплачена, зверніться ---, щоб "
-                                                         f"вам повернули кошти")
+            if order.client_id_master_acc == call.from_user.id:
+                pass
+            else:
+                bot.send_message(order.client_id_master_acc, f'Ваша бронь була відмінена майстром '
+                                                             f'{time.localtime().tm_hour}:{time.localtime().tm_min} '
+                                                             f'{time.localtime().tm_mon}.{time.localtime().tm_mday} \n'
+                                                             f"Ім`я майстра: {master[0].name} \n"
+                                                             f"Телеграм майстра: {master[0].username} \n"
+                                                             f"Назва процедури: {service[0].name} \n"
+                                                             f"Час початку: {start_time[0]}-{start_time[1]} \n"
+                                                             f"Передплачено: {prepaid} \n\n\n"
+                                                             f"***Якщо процедура передплачена, зверніться ---, щоб "
+                                                             f"вам повернули кошти")
         else:
-            bot.send_message(order.client_id, f'Ваша бронь була відмінена майстром '
-                                              f'{time.localtime().tm_hour}:{time.localtime().tm_min} '
-                                              f'{time.localtime().tm_mon}.{time.localtime().tm_mday} \n'
-                                              f"Ім'я майстра: {master[0].name} \n"
-                                              f"Назва процедури: {service.name} \n"
-                                              f"Час початку: {start_time[0]}-{start_time[1]} \n"
-                                              f"Передплачено: {prepaid} \n\n\n"
-                                              f"***Якщо процедура передплачена, зверніться ---, щоб "
-                                              f"вам повернули кошти")
+            if order.client_id == call.from_user.id:
+                pass
+            else:
+                bot.send_message(order.client_id, f'Ваша бронь була відмінена майстром '
+                                                  f'{time.localtime().tm_hour}:{time.localtime().tm_min} '
+                                                  f'{time.localtime().tm_mon}.{time.localtime().tm_mday} \n'
+                                                  f"Ім'я майстра: {master[0].name} \n"
+                                                  f"Телеграм майстра: {master[0].username} \n"
+                                                  f"Назва процедури: {service.name} \n"
+                                                  f"Час початку: {start_time[0]}-{start_time[1]} \n"
+                                                  f"Передплачено: {prepaid} \n\n\n"
+                                                  f"***Якщо процедура передплачена, зверніться ---, щоб "
+                                                  f"вам повернули кошти")
         bot.answer_callback_query(call.id, text="Відхилено!")
 
     elif call.data == 'pre_check_order':
@@ -896,6 +904,19 @@ def callback_handler(call):
         bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
         order_creation(data[1], data[2], data[3], data[4], call)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
+    elif call.data == 'settings_client':
+        keyboard = buttons.client_settings()
+        bot.send_message(call.from_user.id, "Налаштування", reply_markup=keyboard)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
+
+    elif call.data == 'settings_master':
+        keyboard = buttons.master_menu_1(call.from_user.id)
+        bot.send_message(call.from_user.id, "Налаштування", reply_markup=keyboard)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
 
 
 def order_creation(master_id, service_id, day_id, time_slot, call):
@@ -1156,7 +1177,7 @@ def to_menu(call):
             user_instance = get_master(call.from_user.id)
 
             if user_instance[0].cur_role:
-                keyboard = buttons.master_menu_1(call.from_user.id)
+                keyboard = buttons.main_menu_master(call.from_user.id)
             else:
                 keyboard = buttons.client_menu('master')
 
@@ -1344,15 +1365,19 @@ def set_time_cost(message, service_id, segment, reg='1'):
 
 
 def show_orders(orders, user_id, master_flag, call):
+    counter = 1
     for order in orders:
         keyboard = buttons.empty_template()
         try:
             service = get_service_by_id(order.service_id)
             master = get_master(order.master_id)
+            day = get_day_details(order.day_id
+                                  )
             if order.client_id is None:
                 client = get_master(order.client_id_master_acc)
             else:
                 client = get_client(order.client_id)
+
         except Exception as ex:
             logging.error(f'Could not get data. Func: show_orders. Cause: {ex}. Time: {time.asctime()}')
             return
@@ -1372,15 +1397,19 @@ def show_orders(orders, user_id, master_flag, call):
                 return
 
         elif master_flag and not order.done:
-            keyboard.add(buttons.mark_as_done(order.id, call.message.message_id + 1))
-            keyboard.add(buttons.mark_as_canceled_by_master(order.id, call.message.message_id + 1))
+            keyboard.add(buttons.mark_as_done(order.id, call.message.message_id+counter))
+            keyboard.add(buttons.mark_as_canceled_by_master(order.id, call.message.message_id+counter))
+        start_time = order.time.split('-')
         bot.send_message(user_id, f'`Назва послуги:` {str(service[0].name)} \n'
-                                  f"`Ім'я майстра:` {str(master[0].name)} \n"
+                                  f'`Початок о:` {start_time[0]}-{start_time[1]}  \n'
+                                  f'`День неділі:` {day[0].day_name} \n'
+                                  f"`Ім'я клієнта:`  {str(master[0].name)} \n"
                                   f"`Телефон майстра:` {str(master[0].telephone)} \n"
                                   f"`Ім'я клієнта:` {str(client[0].name)} \n"
                                   f"`Телефон клієнта:` {str(client[0].telephone)} \n"
                                   f"`Передплачено: ` {str(prepaid)} \n",
                          reply_markup=keyboard, parse_mode='markdown')
+        counter += 1
     bot.send_message(user_id, 'Повернутись у меню', reply_markup=buttons.to_menu())
 
 

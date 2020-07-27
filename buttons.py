@@ -97,11 +97,20 @@ def client_menu(role):
     callback_button = types.InlineKeyboardButton(text="Улюблені майстри",
                                                  callback_data='saved_masters')
     keyboard.add(callback_button)
-    callback_button = types.InlineKeyboardButton(text="Мій профіль",
-                                                 callback_data='check_profile')
-    keyboard.add(callback_button)
+
     callback_button = types.InlineKeyboardButton(text="Мої записи",
                                                  callback_data='pre_check_order')
+    keyboard.add(callback_button)
+
+    callback_button = types.InlineKeyboardButton(text="Налаштування",
+                                                 callback_data='settings_client')
+    keyboard.add(callback_button)
+    return keyboard
+
+def client_settings():
+    keyboard = types.InlineKeyboardMarkup()
+    callback_button = types.InlineKeyboardButton(text="Мій профіль",
+                                                 callback_data='check_profile')
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Змінити роль",
                                                  callback_data='choose role menu')
@@ -125,8 +134,7 @@ def client_check_order_buttons():
     keyboard.add(callback_button)
     return keyboard
 
-
-def master_menu_1(user_id):
+def main_menu_master(user_id):
     keyboard = types.InlineKeyboardMarkup()
     callback_button = types.InlineKeyboardButton(text="Зарезервувати час",
                                                  callback_data=f'check_services {user_id} reservation')
@@ -134,6 +142,28 @@ def master_menu_1(user_id):
     callback_button = types.InlineKeyboardButton(text="Подивитись чергу",
                                                  callback_data='check_order_master 0')
     keyboard.add(callback_button)
+    callback_button = types.InlineKeyboardButton(text="Подивитись виконані послуги",
+                                                 callback_data='check_order_master 1')
+    keyboard.add(callback_button)
+    callback_button = types.InlineKeyboardButton(text="Мій профіль",
+                                                 callback_data='check_profile')
+    keyboard.add(callback_button)
+    callback_button = types.InlineKeyboardButton(text="Графік",
+                                                 callback_data='set_working_days show')
+    keyboard.add(callback_button)
+    callback_button = types.InlineKeyboardButton(text="Налаштування",
+                                                 callback_data='settings_master')
+    keyboard.add(callback_button)
+    return keyboard
+
+def master_menu_1(user_id):
+    keyboard = types.InlineKeyboardMarkup()
+    # callback_button = types.InlineKeyboardButton(text="Зарезервувати час",
+    #                                              callback_data=f'check_services {user_id} reservation')
+    # keyboard.add(callback_button)
+    # callback_button = types.InlineKeyboardButton(text="Подивитись чергу",
+    #                                              callback_data='check_order_master 0')
+    # keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Подивитись мої сертифікати",
                                                  callback_data='check_certificates' + ' ' + str(user_id))
     keyboard.add(callback_button)
@@ -143,9 +173,9 @@ def master_menu_1(user_id):
     callback_button = types.InlineKeyboardButton(text="Подивитись мої послуги",
                                                  callback_data='check_services' + ' ' + str(user_id))
     keyboard.add(callback_button)
-    callback_button = types.InlineKeyboardButton(text="Мій профіль",
-                                                 callback_data='check_profile')
-    keyboard.add(callback_button)
+    # callback_button = types.InlineKeyboardButton(text="Мій профіль",
+    #                                              callback_data='check_profile')
+    # keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Далі ➡",
                                                  callback_data='menu_2')
     keyboard.add(callback_button)
@@ -154,9 +184,9 @@ def master_menu_1(user_id):
 
 def master_menu_2():
     keyboard = types.InlineKeyboardMarkup()
-    callback_button = types.InlineKeyboardButton(text="Налаштувати робочий час",
-                                                 callback_data='set_working_days show')
-    keyboard.add(callback_button)
+    # callback_button = types.InlineKeyboardButton(text="Налаштувати робочий час",
+    #                                              callback_data='set_working_days show')
+    # keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Додати свої роботи",
                                                  callback_data='add_sample_service')
     keyboard.add(callback_button)
@@ -166,10 +196,9 @@ def master_menu_2():
     callback_button = types.InlineKeyboardButton(text="Додати послугу",
                                                  callback_data='add_service')
     keyboard.add(callback_button)
-
-    callback_button = types.InlineKeyboardButton(text="Подивитись виконані послуги",
-                                                 callback_data='check_order_master 1')
-    keyboard.add(callback_button)
+    # callback_button = types.InlineKeyboardButton(text="Подивитись виконані послуги",
+    #                                              callback_data='check_order_master 1')
+    # keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Змінити роль",
                                                  callback_data='choose role menu')
     keyboard.add(callback_button)
@@ -571,7 +600,7 @@ def set_rating_buttons(master_id):
 
 def mark_as_done(order_id, message_id):
     return types.InlineKeyboardButton(text="Відмітити як виконано",
-                                      callback_data=f'mark_as_done  {order_id} {message_id}')
+                                      callback_data=f'mark_as_done {order_id} {message_id}')
 
 
 def mark_as_canceled_by_master(order_id, message_id):
