@@ -38,14 +38,16 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False, 
         temp = temp_end - timedelta(hours=int(data[0]), minutes=int(data[1]))
         service_time = [str(temp.strftime('%H')), str(temp.strftime('%M'))]
         del temp, temp_end
-
-    master_start_time = time_item.replace(hour=int(working_hours[0]), minute=int(working_hours[1]))
+    master_start_time = now + timedelta(minutes=20) if day_det[0].day_num == today else \
+        time_item.replace(hour=int(working_hours[0]), minute=int(working_hours[1]))
     master_end_time = time_item.replace(hour=int(working_hours[2]), minute=int(working_hours[3]))
     time_slots = []
-
     if set_custom_time:
         user_time = req.split('-')
         user_time_start = time_item.replace(hour=int(user_time[0]), minute=int(user_time[1]))
+        if day_det[0].day_num == today:
+            if user_time_start < now:
+                return [None, 'Ви не можете записатись на час, який вже пройшов']
         user_time_end = user_time_start + timedelta(hours=int(service_time[0]), minutes=int(service_time[1]))
 
         if master_start_time <= user_time_start and master_end_time >= user_time_end:
@@ -77,7 +79,8 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False, 
 
             if master_start_time <= afternoon and (afternoon + timedelta(hours=int(service_time[0]),
                                                                          minutes=int(service_time[1]))) \
-                    <= master_end_time:
+                    <= master_end_time and (day_det[0].day_num != today or
+                                            (day_det[0].day_num == today and now < afternoon)):
                 time_slots.append(str(afternoon.strftime("%H-%M")))
 
             if (master_end_time - timedelta(hours=int(service_time[0]), minutes=int(service_time[1]))) \
