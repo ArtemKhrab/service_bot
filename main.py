@@ -468,23 +468,23 @@ def callback_handler(call):
         bot.send_message(call.from_user.id, 'Оберіть опцію', reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
-    # elif 'check_order_client' in call.data:
-    #     data = call.data.split(' ')
-    #     try:
-    #         orders = get_orders_for_client(call.from_user.id, data[1])
-    #     except Exception as ex:
-    #         logging.error(f'Could not get orders for client. Cause: {ex}. Time: {time.asctime()}')
-    #         session.rollback()
-    #         return
-    #     if orders.__len__() < 1:
-    #         bot.answer_callback_query(call.id, text="Замовлення не знайденні")
-    #         return
-    #     try:
-    #         show_orders(orders, call.from_user.id, False)
-    #     except Exception as ex:
-    #         logging.error(f'Could not show orders. Cause: {ex}')
-    #         return
-    #     bot.answer_callback_query(call.id, text=" ", show_alert=False)
+    elif 'check_order_client' in call.data:
+        data = call.data.split(' ')
+        try:
+            orders = get_orders_for_client(call.from_user.id, data[1])
+        except Exception as ex:
+            logging.error(f'Could not get orders for client. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
+            return
+        if orders.__len__() < 1:
+            bot.answer_callback_query(call.id, text="Замовлення не знайденні")
+            return
+        try:
+            show_orders(orders, call.from_user.id, False, call)
+        except Exception as ex:
+            logging.error(f'Could not show orders. Cause: {ex}')
+            return
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
     elif 'check_order_master' in call.data:
         data = call.data.split(' ')
@@ -498,7 +498,7 @@ def callback_handler(call):
             bot.answer_callback_query(call.id, text="Замовлення не знайденні")
             return
         try:
-            show_orders(orders, call.from_user.id, True)
+            show_orders(orders, call.from_user.id, True, call)
         except Exception as ex:
             logging.error(f'Could not show orders. Cause: {ex}. Time: {time.asctime()}')
             return
@@ -508,11 +508,50 @@ def callback_handler(call):
         data = call.data.split(' ')
         try:
             update_order_as_done(data[1])
+            bot.delete_message(call.from_user.id, int(data[2]))
         except Exception as ex:
             logging.error(f'Could not update order as completed. Cause: {ex}. Time: {time.asctime()}')
             session.rollback()
             return
+
         bot.answer_callback_query(call.id, text="Відмічено!")
+
+    elif 'mark_as_canceled_by_master' in call.data:
+        data = call.data.split(' ')
+        try:
+            bot.delete_message(call.from_user.id, int(data[2]))
+            update_order_as_canceled_by_master(data[1])
+            order = get_order_by_id(data[1])
+            master = get_master(order.master_id)
+            service = get_service_by_id(order.service_id)
+        except Exception as ex:
+            print(ex)
+            logging.error(f'Could not update order as canceled by master. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
+            return
+        start_time = order.time.split('-')
+        prepaid = 'Так' if order.prepaid else 'Ні'
+        if order.client_id is None:
+            bot.send_message(order.client_id_master_acc, f'Ваша бронь була відмінена майстром '
+                                                         f'{time.localtime().tm_hour}:{time.localtime().tm_min} '
+                                                         f'{time.localtime().tm_mon}.{time.localtime().tm_mday} \n'
+                                                         f"Ім'я майстра: {master[0].name} \n"
+                                                         f"Назва процедури: {service[0].name} \n"
+                                                         f"Час початку: {start_time[0]}-{start_time[1]} \n"
+                                                         f"Передплачено: {prepaid} \n\n\n"
+                                                         f"***Якщо процедура передплачена, зверніться ---, щоб "
+                                                         f"вам повернули кошти")
+        else:
+            bot.send_message(order.client_id, f'Ваша бронь була відмінена майстром '
+                                              f'{time.localtime().tm_hour}:{time.localtime().tm_min} '
+                                              f'{time.localtime().tm_mon}.{time.localtime().tm_mday} \n'
+                                              f"Ім'я майстра: {master[0].name} \n"
+                                              f"Назва процедури: {service.name} \n"
+                                              f"Час початку: {start_time[0]}-{start_time[1]} \n"
+                                              f"Передплачено: {prepaid} \n\n\n"
+                                              f"***Якщо процедура передплачена, зверніться ---, щоб "
+                                              f"вам повернули кошти")
+        bot.answer_callback_query(call.id, text="Відхилено!")
 
     elif call.data == 'pre_check_order':
         keyboard = buttons.client_check_order_buttons()
@@ -872,7 +911,6 @@ def order_creation(master_id, service_id, day_id, time_slot, call):
 
 
 def get_time_slots(message, day_det, service_det, day_id, master_id, service_id, call):
-
     if not re.match(r'^([0-1]?[0-9]|2[0-3])-[0-5][0-9]$', message.text):
         bot.send_message(message.chat.id, 'Формат часу: 1-15 – це буде одна '
                                           'година, 15 хвилин.')
@@ -917,7 +955,6 @@ def show_working_days(call, master_id, service_id):
 
 
 def update_time(message, day_id, call):
-
     if not calculations.regex_time(message):
         bot.send_message(message.chat.id, 'Невірний формат часу, спробуйте ще раз. '
                                           '(Приклад: 9-00-18-00)')
@@ -1306,7 +1343,7 @@ def set_time_cost(message, service_id, segment, reg='1'):
         edit_service(message.from_user.id, segment)
 
 
-def show_orders(orders, user_id, master_flag):
+def show_orders(orders, user_id, master_flag, call):
     for order in orders:
         keyboard = buttons.empty_template()
         try:
@@ -1335,7 +1372,8 @@ def show_orders(orders, user_id, master_flag):
                 return
 
         elif master_flag and not order.done:
-            keyboard.add(buttons.mark_as_done(order.id))
+            keyboard.add(buttons.mark_as_done(order.id, call.message.message_id + 1))
+            keyboard.add(buttons.mark_as_canceled_by_master(order.id, call.message.message_id + 1))
         bot.send_message(user_id, f'`Назва послуги:` {str(service[0].name)} \n'
                                   f"`Ім'я майстра:` {str(master[0].name)} \n"
                                   f"`Телефон майстра:` {str(master[0].telephone)} \n"

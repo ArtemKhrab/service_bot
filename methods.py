@@ -3,6 +3,7 @@ import buttons
 from datetime import datetime
 from datetime import timedelta
 
+
 def check_user(tg_id):
     response = session.query(User_role).filter_by(id=tg_id).all()
     if not response.__len__() < 1:
@@ -248,6 +249,12 @@ def update_order_as_done(order_id):
     session.commit()
 
 
+def update_order_as_canceled_by_master(order_id):
+    session.query(Order).filter(Order.id == order_id). \
+        update({Order.canceled_by_master: True}, synchronize_session=False)
+    session.commit()
+
+
 def check_rating(user_id, master_id):
     if get_user_role(user_id):
         rating = session.query(Rating).filter(Rating.master_id == master_id,
@@ -431,6 +438,7 @@ def update_working_time(user_id, time):
         update({Working_days.working_hours: time}, synchronize_session=False)
     session.commit()
 
+
 def edit_day(day_id, non_active=False, set_time=False, time=None, active=False):
     if non_active:
         session.query(Working_days).filter(Working_days.id == day_id). \
@@ -450,6 +458,7 @@ def edit_day(day_id, non_active=False, set_time=False, time=None, active=False):
     else:
         return None
 
+
 def get_available_days(master_id, current_day_num):
     data = session.query(Working_days).filter(Working_days.master_id == master_id,
                                               Working_days.day_num >= int(current_day_num),
@@ -462,7 +471,9 @@ def get_available_days(master_id, current_day_num):
 
 def get_day_details(day_id):
     day = session.query(Working_days).filter(Working_days.id == day_id).all()
-    orders = session.query(Order).filter(Order.day_id == day[0].id).order_by(asc(Order.time)).all()
+    orders = session.query(Order).filter(Order.day_id == day[0].id, Order.canceled_by_system == '0',
+                                         Order.canceled_by_master == '0', Order.canceled_by_client == '0') \
+        .order_by(asc(Order.time)).all()
     if orders is None:
         orders = []
     return [day[0], orders]
@@ -482,11 +493,11 @@ def create_order(master_id, client_id, day_id, time_slot, service_id):
 
     if get_user_role(client_id):
         instance = Order(master_id=master_id, client_id_master_acc=client_id, day_id=day_id,
-                         time=time_slot+f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
+                         time=time_slot + f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
                          money_cost=service[0].money_cost)
     else:
         instance = Order(master_id=master_id, client_id=client_id, day_id=day_id,
-                         time=time_slot+f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
+                         time=time_slot + f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
                          money_cost=service[0].money_cost)
 
     session.add(instance)
@@ -497,6 +508,43 @@ def get_orders_for_master(master_id):
     return session.query(Order).filter(Order.master_id == master_id, Order.done == '0', Order.canceled_by_client == '0',
                                        Order.canceled_by_master == '0', Order.canceled_by_system == '0').all()
 
+
+def get_order_by_id(order_id):
+    return session.query(Order).filter(Order.id == order_id).all()[0]
+
+
+def get_orders_for_client(client_id, option):
+    if get_user_role(client_id):
+        if option == '0':
+            instance = session.query(Order).filter(Order.client_id_master_acc == client_id,
+                                                   Order.done == '0', Order.canceled_by_master == '0',
+                                                   Order.canceled_by_client == '0', Order.canceled_by_system == '0'
+                                                   ).all()
+        elif option == '1':
+            instance = session.query(Order).filter(Order.client_id_master_acc == client_id,
+                                                   Order.done == '1', Order.canceled_by_master == '0',
+                                                   Order.canceled_by_client == '0', Order.canceled_by_system == '0'
+                                                   ).all()
+        elif option == '2':
+            instance = session.query(Order).filter(Order.client_id_master_acc == client_id,
+                                                   or_(Order.canceled_by_master == '1', Order.canceled_by_client == '1',
+                                                       Order.canceled_by_system == '1')).all()
+    else:
+        if option == '0':
+            instance = session.query(Order).filter(Order.client_id == client_id,
+                                                   Order.done == '0', Order.canceled_by_master == '0',
+                                                   Order.canceled_by_client == '0', Order.canceled_by_system == '0'
+                                                   ).all()
+        elif option == '1':
+            instance = session.query(Order).filter(Order.client_id == client_id,
+                                                   Order.done == '1', Order.canceled_by_master == '0',
+                                                   Order.canceled_by_client == '0', Order.canceled_by_system == '0'
+                                                   ).all()
+        elif option == '2':
+            instance = session.query(Order).filter(Order.client_id == client_id,
+                                                   Order.canceled_by_master == '1' or Order.canceled_by_client == '1' or
+                                                   Order.canceled_by_system == '1').all()
+    return instance
 
 # if __name__ == '__main__':
 #     data = session.query(Service_type.name).filter(Service_type.master_id == '405423146',

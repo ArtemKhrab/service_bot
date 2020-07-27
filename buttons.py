@@ -117,6 +117,9 @@ def client_check_order_buttons():
     callback_button = types.InlineKeyboardButton(text="Виконані замовлення",
                                                  callback_data='check_order_client 1')
     keyboard.add(callback_button)
+    callback_button = types.InlineKeyboardButton(text="Відмінені замовлення",
+                                                 callback_data='check_order_client 2')
+    keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="⬅ Повернутись",
                                                  callback_data='del_message')
     keyboard.add(callback_button)
@@ -566,9 +569,14 @@ def set_rating_buttons(master_id):
     return keyboard
 
 
-def mark_as_done(order_id):
+def mark_as_done(order_id, message_id):
     return types.InlineKeyboardButton(text="Відмітити як виконано",
-                                      callback_data='mark_as_done ' + str(order_id))
+                                      callback_data=f'mark_as_done  {order_id} {message_id}')
+
+
+def mark_as_canceled_by_master(order_id, message_id):
+    return types.InlineKeyboardButton(text="Відхилити запис",
+                                      callback_data=f'mark_as_canceled_by_master {order_id} {message_id}')
 
 
 def empty_template():
