@@ -23,12 +23,21 @@ def get_current_day():
     return datetime.date(datetime.now()).weekday()
 
 
-def check_available_time(day_det, service_det, req=None, set_custom_time=False):
+def check_available_time(day_det, service_det, req=None, set_custom_time=False, take_brake=False):
     now = datetime.now()
     working_hours = day_det[0].working_hours.split('-')
     orders = day_det[1]
-    service_time = service_det[0].time_cost.split('-')
     time_item = datetime.now()
+    if not take_brake:
+        service_time = service_det[0].time_cost.split('-')
+    else:
+        data = service_det.split('-')
+        temp_end = time_item.replace(hour=int(data[2]), minute=int(data[3]))
+        req = f'{data[0]}-{data[1]}'
+        temp = temp_end - timedelta(hours=int(data[0]), minutes=int(data[1]))
+        service_time = [str(temp.strftime('%H')), str(temp.strftime('%M'))]
+        del temp, temp_end
+
     master_start_time = time_item.replace(hour=int(working_hours[0]), minute=int(working_hours[1]))
     master_end_time = time_item.replace(hour=int(working_hours[2]), minute=int(working_hours[3]))
     time_slots = []
@@ -48,7 +57,7 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False):
                     order_time = order.time.split('-')
                     order_start = time_item.replace(hour=int(order_time[0]), minute=int(order_time[1]))
                     order_end = time_item.replace(hour=int(order_time[2]), minute=int(order_time[3]))
-                    if (order_start < user_time_start < order_end) or (order_start < user_time_end < order_end):
+                    if (order_start <= user_time_start < order_end) or (order_start < user_time_end <= order_end):
                         return [None, "Занято"]
 
                 else:
@@ -90,7 +99,6 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False):
 
                 if counter == quantity:
                     order_time = order.time.split('-')
-                    print(order_time)
                     order_end = time_item.replace(hour=int(order_time[2]), minute=int(order_time[3]))
                     if (master_end_time - timedelta(hours=int(order_time[2]),
                                                     minutes=int(order_time[3]))) >= service_time_cost:

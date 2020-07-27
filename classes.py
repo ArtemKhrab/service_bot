@@ -145,6 +145,7 @@ class Order(Base):
     prepaid = Column(Boolean, default=False)
     done = Column(Boolean, default=False)
     money_cost = Column(String(6))
+    order_free_time = Column(Boolean, default=False)
     canceled_by_client = Column(Boolean, default=False)
     canceled_by_master = Column(Boolean, default=False)
     canceled_by_system = Column(Boolean, default=False)

@@ -479,10 +479,22 @@ def get_day_details(day_id):
     return [day[0], orders]
 
 
-def create_order(master_id, client_id, day_id, time_slot, service_id):
+def create_order(master_id, client_id, day_id, time_slot, service_id, take_brake=False):
     try:
         service = session.query(Service_type).filter(Service_type.id == service_id).all()
     except:
+        print(Exception)
+        return
+    if take_brake:
+        if get_user_role(client_id):
+            instance = Order(master_id=master_id, client_id_master_acc=client_id, day_id=day_id,
+                             time=time_slot, order_free_time=True)
+        else:
+            instance = Order(master_id=master_id, client_id=client_id, day_id=day_id,
+                             time=time_slot, order_free_time=True)
+
+        session.add(instance)
+        session.commit()
         return
 
     service_time_cost = service[0].time_cost.split('-')
@@ -505,7 +517,8 @@ def create_order(master_id, client_id, day_id, time_slot, service_id):
 
 
 def get_orders_for_master(master_id, done):
-    return session.query(Order).filter(Order.master_id == master_id, Order.done == done, Order.canceled_by_client == '0',
+    return session.query(Order).filter(Order.master_id == master_id, Order.done == done,
+                                       Order.canceled_by_client == '0',
                                        Order.canceled_by_master == '0', Order.canceled_by_system == '0').all()
 
 
@@ -546,7 +559,13 @@ def get_orders_for_client(client_id, option):
                                                    Order.canceled_by_system == '1').all()
     return instance
 
-# if __name__ == '__main__':
-#     data = session.query(Service_type.name).filter(Service_type.master_id == '405423146',
-#                                             Service_type.segment_id == '1').all()
-#     print(data)
+
+def get_cur_day(master_id, cur_day):
+    day = session.query(Working_days).filter(Working_days.master_id == master_id,
+                                             Working_days.day_num == int(cur_day)).all()
+    orders = session.query(Order).filter(Order.day_id == day[0].id, Order.canceled_by_system == '0',
+                                         Order.canceled_by_master == '0', Order.canceled_by_client == '0') \
+        .order_by(asc(Order.time)).all()
+    if orders is None:
+        orders = []
+    return [day[0], orders]

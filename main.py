@@ -377,10 +377,19 @@ def callback_handler(call):
 
     elif 'order_service' in call.data:
         data = call.data.split(' ')
+
+        if data[1] == '4':
+            bot.send_message(call.from_user.id, "Напишіть час перерви. "
+                                                "(Наприклад 10-00-11-00)")
+            bot.register_next_step_handler(call.message, take_brake, call)
+            bot.answer_callback_query(call.id, text=" ", show_alert=False)
+            return
+
         keyboard = buttons.get_services(data[2], call.from_user.id, data[1], data[3])
 
         if keyboard is None:
             bot.answer_callback_query(call.id, text="На жаль, послуги не додані")
+            bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
 
         if (str(call.from_user.id) is str(data[2])) and (data[3] != 'reservation'):
@@ -391,6 +400,7 @@ def callback_handler(call):
                              reply_markup=keyboard[1])
 
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
 
     elif 'add_service' in call.data:
         # data = call.data.split(' ')
@@ -881,9 +891,12 @@ def callback_handler(call):
 
     elif 'reserve_day' in call.data:
         data = call.data.split(' ')
-        day_det = get_day_details(data[1])
-        service_det = get_service_by_id(data[3])
-
+        try:
+            day_det = get_day_details(data[1])
+            service_det = get_service_by_id(data[3])
+        except Exception as ex:
+            logging.error(f'Could not get day details or service by id. Cause: {ex}. Time {time.asctime()}')
+            return
         if data[4] == 'True':
             bot.delete_message(call.from_user.id, call.message.message_id)
             bot.send_message(call.from_user.id,
@@ -919,15 +932,37 @@ def callback_handler(call):
         return
 
 
+def take_brake(message, call):
+
+    if not calculations.regex_time(message):
+        bot.send_message(message.chat.id, 'Формат часу: 1-15 – це буде одна '
+                                          'година, 15 хвилин.')
+        bot.register_next_step_handler(message, take_brake)
+        return
+
+    cur_day = calculations.get_current_day()
+    day_det = get_cur_day(call.from_user.id, cur_day)
+    response = calculations.check_available_time(day_det, message.text, set_custom_time=True, take_brake=True)
+    bot.send_message(call.from_user.id, response[1])
+    if response[0] is not None:
+        try:
+            create_order(call.from_user.id, call.from_user.id, day_det[0].id, message.text, None, True)
+        except Exception as ex:
+            logging.error(f'Could not create free time slot. Cause: {ex}. Time: {time.asctime()}')
+            return
+        bot.send_message(call.from_user.id, 'Вільний таймслот створено!')
+        to_menu(call)
+        return
+
+
 def order_creation(master_id, service_id, day_id, time_slot, call):
     bot.send_message(call.from_user.id, 'Предоплата и тд...')
-    try:
-        create_order(master_id, call.from_user.id, day_id, time_slot, service_id)
-    except Exception as ex:
-        logging.error(f"Could not create order instance. Cause: {ex}. Time: {time.asctime()}")
-        print(ex)
-        return
-    bot.send_message(call.from_user.id, "Заявка створена!")
+    # try:
+    create_order(master_id, call.from_user.id, day_id, time_slot, service_id)
+    # except Exception as ex:
+    #     logging.error(f"Could not create order instance. Cause: {ex}. Time: {time.asctime()}")
+    #     return
+    bot.send_message(call.from_user.id, f"Заявка створена!")
     to_menu(call)
 
 
@@ -939,8 +974,7 @@ def get_time_slots(message, day_det, service_det, day_id, master_id, service_id,
         return
 
     response = calculations.check_available_time(day_det, service_det, req=message.text, set_custom_time=True)
-    bot.send_message(message.chat.id, response[1])
-
+    bot.send_message(call.from_user.id, response[1])
     if response[0] is not None:
         order_creation(master_id, service_id, day_id, response[0], call)
 
@@ -1382,7 +1416,6 @@ def show_orders(orders, user_id, master_flag, call):
             logging.error(f'Could not get data. Func: show_orders. Cause: {ex}. Time: {time.asctime()}')
             return
         prepaid = 'Так' if order.prepaid else 'Ні'
-
         if not master_flag:
             try:
 
@@ -1398,17 +1431,23 @@ def show_orders(orders, user_id, master_flag, call):
 
         elif master_flag and not order.done:
             keyboard.add(buttons.mark_as_done(order.id, call.message.message_id+counter))
-            keyboard.add(buttons.mark_as_canceled_by_master(order.id, call.message.message_id+counter))
         start_time = order.time.split('-')
-        bot.send_message(user_id, f'`Назва послуги:` {str(service[0].name)} \n'
-                                  f'`Початок о:` {start_time[0]}-{start_time[1]}  \n'
-                                  f'`День неділі:` {day[0].day_name} \n'
-                                  f"`Ім'я клієнта:`  {str(master[0].name)} \n"
-                                  f"`Телефон майстра:` {str(master[0].telephone)} \n"
-                                  f"`Ім'я клієнта:` {str(client[0].name)} \n"
-                                  f"`Телефон клієнта:` {str(client[0].telephone)} \n"
-                                  f"`Передплачено: ` {str(prepaid)} \n",
-                         reply_markup=keyboard, parse_mode='markdown')
+        if service.__len__() < 1:
+            bot.send_message(user_id, f'`Перерва` \n'
+                                      f'`Час:` {order.time}  \n'
+                                      f'`День неділі:` {day[0].day_name} \n',
+                             reply_markup=keyboard, parse_mode='markdown')
+        else:
+            keyboard.add(buttons.mark_as_canceled_by_master(order.id, call.message.message_id + counter))
+            bot.send_message(user_id, f'`Назва послуги:` {str(service[0].name)} \n'
+                                      f'`Початок о:` {start_time[0]}-{start_time[1]}  \n'
+                                      f'`День неділі:` {day[0].day_name} \n'
+                                      f"`Ім'я майстра:`  {str(master[0].name)} \n"
+                                      f"`Телефон майстра:` {str(master[0].telephone)} \n"
+                                      f"`Ім'я клієнта:` {str(client[0].name)} \n"
+                                      f"`Телефон клієнта:` {str(client[0].telephone)} \n"
+                                      f"`Передплачено: ` {str(prepaid)} \n",
+                             reply_markup=keyboard, parse_mode='markdown')
         counter += 1
     bot.send_message(user_id, 'Повернутись у меню', reply_markup=buttons.to_menu())
 
