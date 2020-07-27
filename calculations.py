@@ -24,6 +24,7 @@ def get_current_day():
 
 
 def check_available_time(day_det, service_det, req=None, set_custom_time=False, take_brake=False):
+    today = datetime.now().weekday()
     now = datetime.now()
     working_hours = day_det[0].working_hours.split('-')
     orders = day_det[1]

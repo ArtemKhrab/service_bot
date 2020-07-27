@@ -1,6 +1,5 @@
 import random
 import re
-import buttons
 from methods import *
 import os
 import telebot
