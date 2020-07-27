@@ -672,9 +672,7 @@ def edit_profile_buttons(role):
                                                      callback_data='profile_edit photo')
         keyboard.add(callback_button)
 
-    callback_button = types.InlineKeyboardButton(text="Повернутись",
-                                                 callback_data='menu')
-    keyboard.add(callback_button)
+    keyboard.add(back_and_delete())
     return keyboard
 
 
@@ -692,8 +690,7 @@ def working_days_buttons(working_days, option):
                 keyboard.add(callback_button)
         keyboard.add(types.InlineKeyboardButton(text="Налаштувати час",
                                                 callback_data='set_working_time'))
-        keyboard.add(types.InlineKeyboardButton(text="Меню",
-                                                callback_data='del_than_menu'))
+        keyboard.add(back_and_delete())
         return keyboard
     elif option == 'show':
         text = ''
@@ -705,8 +702,7 @@ def working_days_buttons(working_days, option):
                                                 callback_data='set_working_days edit'))
         keyboard.add(types.InlineKeyboardButton(text="Додати робочий день",
                                                 callback_data='set_working_days add'))
-        keyboard.add(types.InlineKeyboardButton(text="Меню",
-                                                callback_data='menu'))
+        keyboard.add(back_and_delete())
         if text == '':
             text = 'Не додано жодного дня!'
         return [text, keyboard]
@@ -716,6 +712,7 @@ def working_days_buttons(working_days, option):
         for day in working_days:
             keyboard.add(types.InlineKeyboardButton(text=day.day_name, callback_data=f'edit_working_day start'
                                                                                      f' {day.id}'))
+        keyboard.add(back_and_delete())
         return keyboard
 
 
