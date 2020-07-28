@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 from datetime import timedelta
+from config import utc
 
 
 def check_time(t):
@@ -25,15 +26,19 @@ def get_current_day():
 def get_current_year():
     return datetime.date(datetime.now()).year
 
-def get_date_by_day_number(day_num):
+
+def get_date_by_day_number(day_num, next_week):
     today = get_current_day()
     day_diff = day_num - today
-    return datetime.today() + timedelta(days=day_diff)
+    if next_week == '1':
+        return datetime.today() + timedelta(days=day_diff+7)
+    else:
+        return datetime.today() + timedelta(days=day_diff)
 
 
 def check_available_time(day_det, service_det, req=None, set_custom_time=False, take_brake=False):
     today = datetime.now().weekday()
-    now = datetime.now()
+    now = datetime.utcnow() + timedelta(hours=utc)
     working_hours = day_det[0].working_hours.split('-')
     orders = day_det[1]
     time_item = datetime.now()

@@ -7,8 +7,14 @@ import base64
 import time
 import logging
 import calculations
-
+import schedule
 from config import token
+from multiprocessing import Process
+
+
+schedule.every().day.at('02:00').do(daily_update)
+schedule.every().monday.at('02:00').do(weekly_update)
+
 
 bot = telebot.TeleBot(token=token)
 data_path = os.curdir + '\\data\\'
@@ -473,8 +479,16 @@ def callback_handler(call):
             user_confirmation(call, data[1], data[2])
         elif data[3] == 'confirmed':
             bot.delete_message(call.from_user.id, call.message.message_id)
-            show_working_days(call, data[1], data[2])
+            keyboard = buttons.choose_week(data[1], data[2])
+            bot.send_message(call.from_user.id, "Оберіть тиждень, на який хочете записатися🗓:", reply_markup=keyboard)
+
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
+
+    elif 'choose_week' in call.data:
+        data = call.data.split(' ')
+        show_working_days(call, data[1], data[2], data[3])
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
 
     elif 'set_working_days' in call.data:
         data = call.data.split(' ')
@@ -910,12 +924,13 @@ def callback_handler(call):
 
     elif 'reserve_day' in call.data:
         data = call.data.split(' ')
-        try:
-            day_det = get_day_details(data[1])
-            service_det = get_service_by_id(data[3])
-        except Exception as ex:
-            logging.error(f'Could not get day details or service by id. Cause: {ex}. Time {time.asctime()}')
-            return
+        # try:
+        print(data)
+        day_det = get_day_details(data[1], data[5])
+        service_det = get_service_by_id(data[3])
+        # except Exception as ex:
+        #     logging.error(f'Could not get day details or service by id. Cause: {ex}. Time {time.asctime()}')
+        #     return
 
         if data[4] == 'True':
             bot.delete_message(call.from_user.id, call.message.message_id)
@@ -923,12 +938,12 @@ def callback_handler(call):
                              'Напишіть час, на який '
                              'хочете записатися (формат: 13-00)')
             bot.register_next_step_handler(call.message, get_time_slots, day_det, service_det, data[1], data[2],
-                                           data[3], call)
+                                           data[3], data[5], call)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
 
         response = calculations.check_available_time(day_det, service_det)
-        keyboard = buttons.set_hours(data[2], data[3], data[1], response[0])
+        keyboard = buttons.set_hours(data[2], data[3], data[1], data[5], response[0])
         bot.send_message(call.from_user.id, response[1], reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
@@ -936,7 +951,7 @@ def callback_handler(call):
     elif 'create_order' in call.data:
         bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
-        order_creation(data[1], data[2], data[3], data[4], call)
+        order_creation(data[1], data[2], data[3], data[4], data[5], call)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
     elif call.data == 'settings_client':
@@ -973,7 +988,7 @@ def take_brake(message, call):
     bot.send_message(call.from_user.id, response[1])
     if response[0] is not None:
         try:
-            create_order(call.from_user.id, call.from_user.id, day_det[0].id, message.text, None, True)
+            create_order(call.from_user.id, call.from_user.id, day_det[0].id, message.text, None, '0', True)
         except Exception as ex:
             logging.error(f'Could not create free time slot. Cause: {ex}. Time: {time.asctime()}')
             return
@@ -982,10 +997,10 @@ def take_brake(message, call):
         return
 
 
-def order_creation(master_id, service_id, day_id, time_slot, call):
+def order_creation(master_id, service_id, day_id, time_slot, next_week, call):
     bot.send_message(call.from_user.id, 'Предоплата и тд...')
     # try:
-    create_order(master_id, call.from_user.id, day_id, time_slot, service_id)
+    create_order(master_id, call.from_user.id, day_id, time_slot, service_id, next_week)
     # except Exception as ex:
     #     logging.error(f"Could not create order instance. Cause: {ex}. Time: {time.asctime()}")
     #     return
@@ -993,19 +1008,20 @@ def order_creation(master_id, service_id, day_id, time_slot, call):
     to_menu(call.from_user.id)
 
 
-def get_time_slots(message, day_det, service_det, day_id, master_id, service_id, call):
+def get_time_slots(message, day_det, service_det, day_id, master_id, service_id, next_week, call):
     if not re.match(r'^([0-1]?[0-9]|2[0-3])-[0-5][0-9]$', message.text):
         bot.send_message(message.chat.id, 'Формат часу: 1-15 – це буде одна '
                                           'година, 15 хвилин.')
-        bot.register_next_step_handler(message, get_time_slots, service_det, day_id, master_id, service_id, call)
+        bot.register_next_step_handler(message, get_time_slots, service_det, day_id, master_id, service_id, next_week,
+                                       call)
         return
 
     response = calculations.check_available_time(day_det, service_det, req=message.text, set_custom_time=True)
     bot.send_message(call.from_user.id, response[1])
     if response[0] is not None:
-        order_creation(master_id, service_id, day_id, response[0], call)
+        order_creation(master_id, service_id, day_id, response[0], next_week, call)
     else:
-        show_working_days(call, master_id, service_id)
+        show_working_days(call, master_id, service_id, next_week)
 
 
 def user_confirmation(call, master_id, service_id):
@@ -1020,13 +1036,13 @@ def user_confirmation(call, master_id, service_id):
                      reply_markup=keyboard)
 
 
-def show_working_days(call, master_id, service_id):
+def show_working_days(call, master_id, service_id, next_week):
     try:
-        days = get_available_days(master_id, calculations.get_current_day())
+        days = get_available_days(master_id, calculations.get_current_day(), next_week)
     except Exception as ex:
         logging.error(f'Could not get available days. Cause: {ex}. Time: {time.asctime()}')
         return
-    keyboard = buttons.reserve_day(days, master_id, service_id)
+    keyboard = buttons.reserve_day(days, master_id, service_id, next_week)
 
     if keyboard is None:
         keyboard = buttons.empty_template()
@@ -1453,8 +1469,7 @@ def show_orders(orders, user_id, master_flag, call):
         try:
             service = get_service_by_id(order.service_id)
             master = get_master(order.master_id)
-            day = get_day_details(order.day_id
-                                  )
+            day = get_day_details(order.day_id)
             if order.client_id is None:
                 client = get_master(order.client_id_master_acc)
             else:
@@ -1779,7 +1794,7 @@ bot.enable_save_next_step_handlers(delay=2)
 # bot.load_next_step_handlers()
 
 
-def check_start_ud_data():
+def check_start_up_data():
     cities = get_cities()
 
     if cities.__len__() < 1:
@@ -1787,11 +1802,24 @@ def check_start_ud_data():
     else:
         return
 
+def start_schedule():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
-if __name__ == '__main__':
-    logging.basicConfig(filename='logs.log')
+def start_bot():
     try:
-        check_start_ud_data()
+        check_start_up_data()
         bot.polling(none_stop=True)
     except Exception as e:
         logging.error(f'Could not start a bot. Cause: {e}. Time: {time.asctime()}')
+
+
+if __name__ == '__main__':
+    logging.basicConfig(filename='logs.log')
+    schedule_process = Process(target=start_schedule)
+    schedule_process.start()
+    bot_process = Process(target=start_bot)
+    bot_process.start()
+    schedule_process.join()
+    bot_process.join()

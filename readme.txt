@@ -1,7 +1,6 @@
-First, install requirements. *pip install -r requirements.txt*
-Second, execute start_up_settings.bat file.
-Then you can run the bot, *just execute main.py*.
+pip install -r requirements.txt
+execute start_up_settings.bat
+download and install mysql shell - https://dev.mysql.com/doc/mysql-shell/8.0/en/mysqlsh.html
+connect with your google account for the google calendar using
 
-***You must have the Mysql server at your computer installed.
-
-+ You need MySqlShell - https://dev.mysql.com/doc/mysql-shell/8.0/en/mysqlsh.html
+and enjoy :)

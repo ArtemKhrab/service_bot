@@ -3,6 +3,7 @@ import buttons
 from datetime import datetime
 from datetime import timedelta
 import time_slots_managment
+import calculations
 
 
 def check_user(tg_id):
@@ -326,7 +327,7 @@ def get_service_names(user_id, segment):
 
 
 def get_days(user_id):
-    data = session.query(Working_days).filter(Working_days.master_id == user_id).all()
+    data = session.query(Working_days).order_by(Working_days.day_num).filter(Working_days.master_id == user_id).all()
     if data is None:
         return []
     else:
@@ -461,27 +462,32 @@ def edit_day(day_id, non_active=False, set_time=False, time=None, active=False):
         return None
 
 
-def get_available_days(master_id, current_day_num):
-    data = session.query(Working_days).filter(Working_days.master_id == master_id,
-                                              Working_days.day_num >= int(current_day_num),
-                                              Working_days.non_active == 0).all()
+def get_available_days(master_id, current_day_num, next_week):
+    if next_week == '0':
+        data = session.query(Working_days).filter(Working_days.master_id == master_id,
+                                                  Working_days.day_num >= int(current_day_num),
+                                                  Working_days.non_active == 0).all()
+    else:
+        data = session.query(Working_days).filter(Working_days.master_id == master_id,
+                                                  Working_days.non_active == 0).all()
     if data is None:
         return []
     else:
         return data
 
 
-def get_day_details(day_id):
+def get_day_details(day_id, next_week='0'):
     day = session.query(Working_days).filter(Working_days.id == day_id).all()
     orders = session.query(Order).filter(Order.day_id == day[0].id, Order.canceled_by_system == '0',
-                                         Order.canceled_by_master == '0', Order.canceled_by_client == '0') \
+                                         Order.canceled_by_master == '0', Order.canceled_by_client == '0',
+                                         Order.next_week == next_week) \
         .order_by(asc(Order.time)).all()
     if orders is None:
         orders = []
     return [day[0], orders]
 
 
-def create_order(master_id, client_id, day_id, time_slot, service_id, take_brake=False):
+def create_order(master_id, client_id, day_id, time_slot, service_id, next_week, take_brake=False):
     try:
         service = session.query(Service_type).filter(Service_type.id == service_id).all()
     except:
@@ -508,24 +514,27 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, take_brake
     if get_user_role(client_id):
         instance = Order(master_id=master_id, client_id_master_acc=client_id, day_id=day_id,
                          time=time_slot + f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
-                         money_cost=service[0].money_cost)
+                         money_cost=service[0].money_cost, next_week=(True if next_week == '1' else False))
         client = get_master(client_id)
     else:
         instance = Order(master_id=master_id, client_id=client_id, day_id=day_id,
                          time=time_slot + f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
-                         money_cost=service[0].money_cost)
+                         money_cost=service[0].money_cost, next_week=(True if next_week == '1' else False))
         client = get_client(client_id)
     master = get_master(master_id)
     session.add(instance)
     session.commit()
     day = get_day_details(day_id)
     try:
-        time_slots_managment.create_calendar_instance(title=service[0].name, description=f'{service[0].name}. \n'
-                                                                                         f'Майстер: {master[0].name} .\n'
-                                                                                         f'Телефон клієнта: '
-                                                                                         f'{client[0].telephone} \n',
+        time_slots_managment.create_calendar_instance(title=service[0].name,
+                                                      description=f'{service[0].name}. \n'
+                                                                  f'Майстер: {master[0].name} .\n'
+                                                                  f'Телефон клієнта: '
+                                                                  f'{client[0].telephone} \n',
                                                       start_end_time=time_slot + f'-{str(service_time.strftime("%H-%M"))}',
-                                                      day_num=day[0].day_num, master_email=master[0].email)
+                                                      day_num=day[0].day_num,
+                                                      master_email=master[0].email,
+                                                      next_week=next_week)
     except Exception as ex:
         print(ex)
         return
@@ -584,3 +593,17 @@ def get_cur_day(master_id, cur_day):
     if orders is None:
         orders = []
     return [day[0], orders]
+
+
+def daily_update():
+    session.query(Order).filter(Working_days.day_num == calculations.get_current_day()-1, Order.next_week == '0',
+                                Order.done == '0'). \
+        update({Order.canceled_by_system: True}, synchronize_session=False)
+    session.commit()
+
+
+def weekly_update():
+    session.query(Order).filter(Order.next_week == '1'). \
+        update({Order.next_week: False}, synchronize_session=False)
+    session.commit()
+

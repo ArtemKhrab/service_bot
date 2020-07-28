@@ -565,6 +565,17 @@ def edit_service(user_id, segment):
     return keyboard
 
 
+def choose_week(master_id, service_id):
+    keyboard = types.InlineKeyboardMarkup()
+    callback_button = types.InlineKeyboardButton(text='Поточний тиждень',
+                                                 callback_data=f'choose_week {master_id} {service_id} 0')
+    keyboard.add(callback_button)
+    callback_button = types.InlineKeyboardButton(text='Наступний тиждень',
+                                                 callback_data=f'choose_week {master_id} {service_id} 1')
+    keyboard.add(callback_button)
+    return keyboard
+
+
 def edit_service_buttons(service_id, segment, user_id):
     keyboard = types.InlineKeyboardMarkup()
     callback_button = types.InlineKeyboardButton(text='Змінити ціну',
@@ -728,7 +739,8 @@ def working_days_buttons(working_days, option):
         return keyboard
 
 
-def reserve_day(working_days, master_id, service_id):
+def reserve_day(working_days, master_id, service_id, next_week):
+    print(next_week)
     keyboard = types.InlineKeyboardMarkup()
     if working_days.__len__() < 1:
         return None
@@ -737,7 +749,8 @@ def reserve_day(working_days, master_id, service_id):
                                                                                  f' {day.id}'
                                                                                  f' {master_id}'
                                                                                  f' {service_id}'
-                                                                                 f' False'))
+                                                                                 f' False'
+                                                                                 f' {next_week}'))
     keyboard.add(back_and_delete())
     return keyboard
 
@@ -786,7 +799,7 @@ def to_completed_services():
     return keyboard
 
 
-def set_hours(master_id, service_id, day_id, times):
+def set_hours(master_id, service_id, day_id, next_week, times):
     keyboard = types.InlineKeyboardMarkup()
     for time in times:
         callback_button = types.InlineKeyboardButton(text=time,
@@ -794,12 +807,15 @@ def set_hours(master_id, service_id, day_id, times):
                                                                    f' {master_id}'
                                                                    f' {service_id}'
                                                                    f' {day_id}'
-                                                                   f' {time}')
+                                                                   f' {time}'
+                                                                   f' {next_week}')
         keyboard.add(callback_button)
     keyboard.add(types.InlineKeyboardButton(text="Задати свій час",
                                             callback_data=f'reserve_day'
                                                           f' {day_id}'
                                                           f' {master_id}'
-                                                          f' {service_id} True'))
+                                                          f' {service_id}'
+                                                          f' True'
+                                                          f' {next_week}'))
     keyboard.add(back_and_delete())
     return keyboard

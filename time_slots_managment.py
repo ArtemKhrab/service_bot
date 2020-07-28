@@ -3,10 +3,12 @@ from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 import calculations
+from config import utc
 # import random
 
 
-def create_calendar_instance(title=None, description=None, start_end_time=None, day_num=None, master_email=None):
+def create_calendar_instance(title=None, description=None, start_end_time=None, day_num=None, master_email=None,
+                             next_week=None):
     try:
         import argparse
         flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
@@ -32,11 +34,11 @@ def create_calendar_instance(title=None, description=None, start_end_time=None, 
         'description': f'{description}',
         'start': {
             'dateTime':
-                f'{calculations.get_date_by_day_number(day_num).strftime("%Y-%m-%d")}T{data[0]}:{data[1]}:00+03:00',
+                f'{calculations.get_date_by_day_number(day_num, next_week).strftime("%Y-%m-%d")}T{data[0]}:{data[1]}:00+0{utc}:00',
         },
         'end': {
             'dateTime':
-                f'{calculations.get_date_by_day_number(day_num).strftime("%Y-%m-%d")}T{data[2]}:{data[3]}:00+03:00',
+                f'{calculations.get_date_by_day_number(day_num, next_week).strftime("%Y-%m-%d")}T{data[2]}:{data[3]}:00+0{utc}:00',
         },
         'attendees': [
             {'email': f'{master_email}'},
