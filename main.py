@@ -402,7 +402,7 @@ def callback_handler(call):
         keyboard = buttons.get_services(data[2], call.from_user.id, data[1], data[3])
 
         if keyboard is None:
-            bot.answer_callback_query(call.id, text="На жаль, послуги не додані")
+            bot.answer_callback_query(call.id, text="Майстер не надає цей тип послуг")
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
 
@@ -886,6 +886,7 @@ def callback_handler(call):
             except Exception as ex:
                 logging.error(f'Could not update working hours. Cause: {ex}. Time: {time.asctime()}')
                 return
+
             if response is None:
                 logging.error('edit_day method: unknown option')
 
@@ -899,6 +900,7 @@ def callback_handler(call):
             except Exception as ex:
                 logging.error(f'Could not update working hours. Cause: {ex}. Time: {time.asctime()}')
                 return
+
             if response is None:
                 logging.error('edit_day method: unknown option')
 
@@ -914,6 +916,7 @@ def callback_handler(call):
         except Exception as ex:
             logging.error(f'Could not get day details or service by id. Cause: {ex}. Time {time.asctime()}')
             return
+
         if data[4] == 'True':
             bot.delete_message(call.from_user.id, call.message.message_id)
             bot.send_message(call.from_user.id,
@@ -945,6 +948,13 @@ def callback_handler(call):
     elif call.data == 'settings_master':
         keyboard = buttons.master_menu_1(call.from_user.id)
         bot.send_message(call.from_user.id, "Налаштування", reply_markup=keyboard)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
+
+    elif 'check_more_details' in call.data:
+        data = call.data.split(' ')
+        keyboard = buttons.master_more_details(data[1])
+        bot.send_message(call.from_user.id, 'Деталі🗂:', reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
 
@@ -1411,7 +1421,6 @@ def set_email(message, role, reg):
             bot.send_message(message.chat.id, "А зараз оберіть Ваше місто:", reply_markup=keyboard)
         else:
             edit_profile(message.from_user.id, role)
-
 
 
 def set_time_cost(message, service_id, segment, reg='1'):

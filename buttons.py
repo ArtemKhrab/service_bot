@@ -234,8 +234,8 @@ def service_segments(master_id, add, res=None):
                     (str(segment.name) == 'Виділити вільний час' and res is not None):
                 keyboard.add(callback_button)
 
-    callback_button = back_and_delete()
-    keyboard.add(callback_button)
+        callback_button = back_and_delete()
+        keyboard.add(callback_button)
     return keyboard
 
 
@@ -299,13 +299,13 @@ def moving_certificates_buttons(index, end_index, data_id, master_id, user_id):
     keyboard.add(callback_button)
 
     if int(index) < int(end_index):
-        callback_button = types.InlineKeyboardButton(text="Далі",
+        callback_button = types.InlineKeyboardButton(text="➡",
                                                      callback_data='move_certificate ' + str(int(index) + 1) +
                                                                    ' ' + str(end_index) + ' ' + str(master_id))
         keyboard.add(callback_button)
 
     if int(index) > 0:
-        callback_button = types.InlineKeyboardButton(text="Назад",
+        callback_button = types.InlineKeyboardButton(text="⬅",
                                                      callback_data='move_certificate ' + str(int(index) - 1) +
                                                                    ' ' + str(end_index) + ' ' + str(master_id))
         keyboard.add(callback_button)
@@ -327,13 +327,13 @@ def moving_services_buttons(index, end_index, data_id, master_id, user_id):
     keyboard.add(callback_button)
 
     if int(index) < int(end_index):
-        callback_button = types.InlineKeyboardButton(text="Далі",
+        callback_button = types.InlineKeyboardButton(text="➡",
                                                      callback_data='move_services ' + str(int(index) + 1) +
                                                                    ' ' + str(end_index) + ' ' + str(master_id))
         keyboard.add(callback_button)
 
     if int(index) > 0:
-        callback_button = types.InlineKeyboardButton(text="Назад",
+        callback_button = types.InlineKeyboardButton(text="⬅",
                                                      callback_data='move_services ' + str(int(index) - 1) +
                                                                    ' ' + str(end_index) + ' ' + str(master_id))
         keyboard.add(callback_button)
@@ -403,19 +403,18 @@ def edit_certificate_buttons(certificate_id, user_id):
 
 def order_placement_buttons(city_id):
     placements = methods.get_placements(city_id)
-    text = 'Салони: \n'
-    keyboard = types.InlineKeyboardMarkup(row_width=4)
-    counter = 1
-    buttons = []
+    text = 'Салони:'
+    keyboard = types.InlineKeyboardMarkup()
+    # counter = 1
+    # buttons = []
 
     for place in placements:
-        text += str(counter) + '. ' + place.name + ' ' + str(place.address) + '\n'
-        callback_button = types.InlineKeyboardButton(text=counter,
+        callback_button = types.InlineKeyboardButton(text=f'{place.name}, {place.address}',
                                                      callback_data='order_placement ' + str(place.id))
-        counter += 1
-        buttons.append(callback_button)
+        # counter += 1
+        # buttons.append(callback_button)
 
-    keyboard.add(*buttons)
+        keyboard.add(callback_button)
     return [text, keyboard, placements]
 
 
@@ -427,35 +426,44 @@ def send_location():
 
 def moving_masters_buttons(index, end_index, master_id, placement_id, user_id):
     keyboard = types.InlineKeyboardMarkup()
-    callback_button = types.InlineKeyboardButton(text="Подивитись роботи",
-                                                 callback_data='check_sample_services' + ' ' + str(master_id))
-    keyboard.add(callback_button)
-    callback_button = types.InlineKeyboardButton(text="Подивитись сертифікати",
-                                                 callback_data='check_certificates' + ' ' + str(master_id))
-    keyboard.add(callback_button)
     if str(master_id) != str(user_id):
-        callback_button = types.InlineKeyboardButton(text="Додати до улюблених",
-                                                     callback_data='add_to_favorite' + ' ' + str(master_id))
+        callback_button = types.InlineKeyboardButton(text="Детальніше",
+                                                     callback_data=f'check_more_details {master_id}')
         keyboard.add(callback_button)
         callback_button = types.InlineKeyboardButton(text="Обрати послугу",
                                                      callback_data='check_services' + ' ' + str(master_id))
         keyboard.add(callback_button)
-    keyboard.add(back_and_delete())
+    keyboard.add(types.InlineKeyboardButton(text="До головного меню",
+                                            callback_data='menu'))
 
     if int(index) < int(end_index):
-        callback_button = types.InlineKeyboardButton(text="Далі",
+        callback_button = types.InlineKeyboardButton(text="➡",
                                                      callback_data='move_masters ' + str(int(index) + 1) +
                                                                    ' ' + str(end_index) +
                                                                    ' ' + str(placement_id))
         keyboard.add(callback_button)
 
     if int(index) > 0:
-        callback_button = types.InlineKeyboardButton(text="Назад",
+        callback_button = types.InlineKeyboardButton(text="⬅",
                                                      callback_data='move_masters ' + str(int(index) - 1) +
                                                                    ' ' + str(end_index) +
                                                                    ' ' + str(placement_id))
         keyboard.add(callback_button)
 
+    return keyboard
+
+def master_more_details(master_id):
+    keyboard = types.InlineKeyboardMarkup()
+    callback_button = types.InlineKeyboardButton(text="Подивитись роботи",
+                                                 callback_data='check_sample_services' + ' ' + str(master_id))
+    keyboard.add(callback_button)
+    callback_button = types.InlineKeyboardButton(text="Подивитись сертифікати",
+                                                 callback_data='check_certificates' + ' ' + str(master_id))
+    keyboard.add(callback_button)
+    callback_button = types.InlineKeyboardButton(text="Додати до улюблених",
+                                                 callback_data='add_to_favorite' + ' ' + str(master_id))
+    keyboard.add(callback_button)
+    keyboard.add(back_and_delete())
     return keyboard
 
 
@@ -516,7 +524,7 @@ def get_services(master_id, user_id, segment, reservation):
             time = service.time_cost if service.time_cost is not None else 'не задано'
             try:
                 text += str(counter) + '. ' + service.name + ' Ціна: ' + money + \
-                        ', Час выконання: ' + time + '\n'
+                        ', Час виконання: ' + time + '\n'
             except TypeError as tp:
                 print(tp)
             counter += 1
