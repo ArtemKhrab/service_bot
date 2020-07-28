@@ -327,7 +327,7 @@ def get_service_names(user_id, segment):
 
 
 def get_days(user_id):
-    data = session.query(Working_days).order_by(Working_days.day_num).filter(Working_days.master_id == user_id).all()
+    data = session.query(Working_days).order_by(asc(Working_days.day_num)).filter(Working_days.master_id == user_id).all()
     if data is None:
         return []
     else:
@@ -464,11 +464,11 @@ def edit_day(day_id, non_active=False, set_time=False, time=None, active=False):
 
 def get_available_days(master_id, current_day_num, next_week):
     if next_week == '0':
-        data = session.query(Working_days).filter(Working_days.master_id == master_id,
+        data = session.query(Working_days).order_by(asc(Working_days.day_num)).filter(Working_days.master_id == master_id,
                                                   Working_days.day_num >= int(current_day_num),
                                                   Working_days.non_active == 0).all()
     else:
-        data = session.query(Working_days).filter(Working_days.master_id == master_id,
+        data = session.query(Working_days).order_by(asc(Working_days.day_num)).filter(Working_days.master_id == master_id,
                                                   Working_days.non_active == 0).all()
     if data is None:
         return []
