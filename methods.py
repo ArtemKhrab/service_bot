@@ -422,7 +422,8 @@ def get_city_by_id(city_id):
 def move_user(user_id):
     user_instance = get_client(user_id)
     instance = Master(name=user_instance[0].name, user_id=user_instance[0].user_id, username=user_instance[0].username,
-                      telephone=user_instance[0].telephone, city_id=user_instance[0].city_id)
+                      telephone=user_instance[0].telephone, city_id=user_instance[0].city_id,
+                      email=user_instance[0].email)
     session.add(instance)
     session.commit()
     update_to_master(user_id)
