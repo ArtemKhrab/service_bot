@@ -657,6 +657,9 @@ def edit_profile_buttons(role):
     callback_button = types.InlineKeyboardButton(text="Місто",
                                                  callback_data=f'profile_edit edit_city {role}')
     keyboard.add(callback_button)
+    callback_button = types.InlineKeyboardButton(text="Пошта",
+                                                 callback_data=f'profile_edit edit_email {role}')
+    keyboard.add(callback_button)
 
     if role == 'master':
         callback_button = types.InlineKeyboardButton(text="Номер картки",
@@ -672,7 +675,8 @@ def edit_profile_buttons(role):
                                                      callback_data='profile_edit photo')
         keyboard.add(callback_button)
 
-    keyboard.add(back_and_delete())
+    keyboard.add(types.InlineKeyboardButton(text="Меню",
+                                                 callback_data='menu'))
     return keyboard
 
 

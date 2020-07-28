@@ -645,6 +645,9 @@ def callback_handler(call):
         elif data[1] == 'photo':
             bot.send_message(call.from_user.id, 'Відправте мені ваше фото')
             bot.register_next_step_handler(message=call.message, reg='', callback=set_acc_photo)
+        elif data[1] == 'edit_email':
+            bot.send_message(call.from_user.id, 'Вкажіть діючу пошту✉')
+            bot.register_next_step_handler(call.message, set_email, data[2], None)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
 
@@ -1390,12 +1393,12 @@ def set_money_cost(message, service_id, segment, reg='1'):
         bot.send_message(message.from_user.id, 'Виконано!')
         edit_service(message.from_user.id, segment)
 
-def set_email(message, role):
+def set_email(message, role, reg):
 
     if not re.match(r'^[a-z0-9A-Z]+[._]?[a-z0-9A-Z]+[@]\w+[.]\w{2,3}$', message.text):
         bot.send_message(message.chat.id, "Невірний формат електронної адреси")
         bot.send_message(message.chat.id, "Спробуйте ще раз!")
-        bot.register_next_step_handler(message, set_email, role)
+        bot.register_next_step_handler(message, set_email, role, reg)
         return
     else:
         try:
@@ -1403,9 +1406,12 @@ def set_email(message, role):
         except Exception as ex:
             logging.error(f'Could not set mail. Cause: {ex}. Time: {time.asctime()}')
             return
-        keyboard = buttons.city_buttons(role, 'reg')
-        bot.send_message(message.chat.id, "А зараз оберіть Ваше місто:", reply_markup=keyboard)
-        return
+        if reg == 'reg':
+            keyboard = buttons.city_buttons(role, reg)
+            bot.send_message(message.chat.id, "А зараз оберіть Ваше місто:", reply_markup=keyboard)
+        else:
+            edit_profile(message.from_user.id, role)
+
 
 
 def set_time_cost(message, service_id, segment, reg='1'):
@@ -1524,7 +1530,7 @@ def set_telephone(message, role):
         return
     bot.send_message(message.from_user.id, 'Вкажіть діючу пошту✉',
                      reply_markup=buttons.del_button())
-    bot.register_next_step_handler(message, set_email, role)
+    bot.register_next_step_handler(message, set_email, role, 'reg')
 
 
 def set_acc_photo(message, reg):
