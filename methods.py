@@ -2,6 +2,7 @@ from classes import *
 import buttons
 from datetime import datetime
 from datetime import timedelta
+import time_slots_managment
 
 
 def check_user(tg_id):
@@ -507,13 +508,26 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, take_brake
         instance = Order(master_id=master_id, client_id_master_acc=client_id, day_id=day_id,
                          time=time_slot + f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
                          money_cost=service[0].money_cost)
+        client = get_master(client_id)
     else:
         instance = Order(master_id=master_id, client_id=client_id, day_id=day_id,
                          time=time_slot + f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
                          money_cost=service[0].money_cost)
-
+        client = get_client(client_id)
+    master = get_master(master_id)
     session.add(instance)
     session.commit()
+    day = get_day_details(day_id)
+    try:
+        time_slots_managment.create_calendar_instance(title=service[0].name, description=f'{service[0].name}. \n'
+                                                                                         f'Майстер: {master[0].name} .\n'
+                                                                                         f'Телефон клієнта: '
+                                                                                         f'{client[0].telephone} \n',
+                                                      start_end_time=time_slot + f'-{str(service_time.strftime("%H-%M"))}',
+                                                      day_num=day[0].day_num, master_email=master[0].email)
+    except Exception as ex:
+        print(ex)
+        return
 
 
 def get_orders_for_master(master_id, done):

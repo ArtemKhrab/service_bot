@@ -1,4 +1,3 @@
-
 import re
 from datetime import datetime
 from datetime import timedelta
@@ -21,6 +20,15 @@ def regex_time(message):
 
 def get_current_day():
     return datetime.date(datetime.now()).weekday()
+
+
+def get_current_year():
+    return datetime.date(datetime.now()).year
+
+def get_date_by_day_number(day_num):
+    today = get_current_day()
+    day_diff = day_num - today
+    return datetime.today() + timedelta(days=day_diff)
 
 
 def check_available_time(day_det, service_det, req=None, set_custom_time=False, take_brake=False):

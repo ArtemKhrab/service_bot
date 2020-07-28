@@ -1,5 +1,4 @@
-*.json
-time_slots_managment.py
+storage.json
 token.pickle
 /.idea
 /__pycache__

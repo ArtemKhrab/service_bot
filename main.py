@@ -20,6 +20,21 @@ def start(message):
     keyboard = buttons.choose_language_buttons()
     bot.send_message(message.from_user.id, 'Обери мову/Choose a language', reply_markup=keyboard)
 
+@bot.message_handler(commands=['menu'])
+def menu(message):
+    try:
+        flag = check_user(message.from_user.id)
+    except Exception as ex:
+        session.rollback()
+        logging.error(f'Could not check user. Cause: {ex}. Time: {time.asctime()}')
+        return
+    if not flag:
+        keyboard = buttons.choose_role_button_reg()
+        bot.send_message(message.from_user.id, "Спочатку зареєструйтесь!", reply_markup=keyboard)
+        return
+    else:
+        to_menu(message.from_user.id)
+
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
@@ -37,7 +52,7 @@ def callback_handler(call):
         data = call.data.split(' ')
         if flag:
             bot.send_message(call.from_user.id, 'Ви вже зареєстровані!')
-            to_menu(call)
+            to_menu(call.from_user.id)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
         registration(call.message, data[1])
@@ -92,7 +107,7 @@ def callback_handler(call):
                     logging.error(f'Could not set current role. Cause: {ex}. Time: {time.asctime()}')
                     session.rollback()
                     return
-                to_menu(call)
+                to_menu(call.from_user.id)
                 bot.answer_callback_query(call.id, text=" ", show_alert=False)
                 return
             else:
@@ -107,7 +122,7 @@ def callback_handler(call):
                 logging.error(f'Could not set current role. Cause: {ex}. Time: {time.asctime()}')
                 session.rollback()
                 return
-            to_menu(call)
+            to_menu(call.from_user.id)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
 
@@ -140,7 +155,7 @@ def callback_handler(call):
         return
 
     if call.data == 'menu':
-        to_menu(call)
+        to_menu(call.from_user.id)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
     elif call.data == 'menu_1':
@@ -723,7 +738,7 @@ def callback_handler(call):
         end_index = services.__len__() - 1
 
         if end_index == -1:
-            to_menu(call)
+            to_menu(call.from_user.id)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
 
@@ -774,7 +789,7 @@ def callback_handler(call):
         end_index = certificates.__len__() - 1
 
         if end_index == -1:
-            to_menu(call)
+            to_menu(call.from_user.id)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
 
@@ -829,7 +844,7 @@ def callback_handler(call):
 
     elif call.data == 'del_than_menu':
         bot.delete_message(call.from_user.id, call.message.message_id)
-        to_menu(call)
+        to_menu(call.from_user.id)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
     elif call.data == 'set_working_time':
@@ -950,7 +965,7 @@ def take_brake(message, call):
             logging.error(f'Could not create free time slot. Cause: {ex}. Time: {time.asctime()}')
             return
         bot.send_message(call.from_user.id, 'Вільний таймслот створено!')
-        to_menu(call)
+        to_menu(call.from_user.id)
         return
 
 
@@ -962,7 +977,7 @@ def order_creation(master_id, service_id, day_id, time_slot, call):
     #     logging.error(f"Could not create order instance. Cause: {ex}. Time: {time.asctime()}")
     #     return
     bot.send_message(call.from_user.id, f"Заявка створена!")
-    to_menu(call)
+    to_menu(call.from_user.id)
 
 
 def get_time_slots(message, day_det, service_det, day_id, master_id, service_id, call):
@@ -976,6 +991,8 @@ def get_time_slots(message, day_det, service_det, day_id, master_id, service_id,
     bot.send_message(call.from_user.id, response[1])
     if response[0] is not None:
         order_creation(master_id, service_id, day_id, response[0], call)
+    else:
+        show_working_days(call, master_id, service_id)
 
 
 def user_confirmation(call, master_id, service_id):
@@ -1050,7 +1067,7 @@ def set_working_time(message, call):
         logging.error(f'Could not set working time. Cause: {ex}, Time: {time.asctime()}')
         return
     bot.send_message(call.from_user.id, 'Час виставлено!⏱')
-    to_menu(call)
+    to_menu(call.from_user.id)
 
 
 def set_working_days(call, again, option):
@@ -1100,7 +1117,7 @@ def set_feedback(message, user_id, master_id, call):
 
     if message.text is None:
         bot.send_message(user_id, 'Неправильний формат тексту(')
-        to_menu(call)
+        to_menu(call.from_user.id)
         return
     else:
         try:
@@ -1204,13 +1221,13 @@ def update_certificate_photo(message, ran, create, photo):
         return
 
 
-def to_menu(call):
+def to_menu(user_id):
     try:
-        if get_user_role(call.from_user.id):
-            user_instance = get_master(call.from_user.id)
+        if get_user_role(user_id):
+            user_instance = get_master(user_id)
 
             if user_instance[0].cur_role:
-                keyboard = buttons.main_menu_master(call.from_user.id)
+                keyboard = buttons.main_menu_master(user_id)
             else:
                 keyboard = buttons.client_menu('master')
 
@@ -1219,7 +1236,7 @@ def to_menu(call):
     except Exception as ex:
         logging.error(f'Could not get user data. Func: to_menu . Cause: {ex}. Time: {time.asctime()}')
         return
-    bot.send_message(call.from_user.id, 'Меню', reply_markup=keyboard)
+    bot.send_message(user_id, 'Меню', reply_markup=keyboard)
 
 
 def edit_sample_service(service_id, user_id):
@@ -1373,6 +1390,23 @@ def set_money_cost(message, service_id, segment, reg='1'):
         bot.send_message(message.from_user.id, 'Виконано!')
         edit_service(message.from_user.id, segment)
 
+def set_email(message, role):
+
+    if not re.match(r'^[a-z0-9A-Z]+[._]?[a-z0-9A-Z]+[@]\w+[.]\w{2,3}$', message.text):
+        bot.send_message(message.chat.id, "Невірний формат електронної адреси")
+        bot.send_message(message.chat.id, "Спробуйте ще раз!")
+        bot.register_next_step_handler(message, set_email, role)
+        return
+    else:
+        try:
+            update_email(message.from_user.id, message.text, role)
+        except Exception as ex:
+            logging.error(f'Could not set mail. Cause: {ex}. Time: {time.asctime()}')
+            return
+        keyboard = buttons.city_buttons(role, 'reg')
+        bot.send_message(message.chat.id, "А зараз оберіть Ваше місто:", reply_markup=keyboard)
+        return
+
 
 def set_time_cost(message, service_id, segment, reg='1'):
     if not re.match(r'^([0-1]?[0-9]|2[0-3])-[0-5][0-9]$', message.text):
@@ -1488,9 +1522,9 @@ def set_telephone(message, role):
     except Exception as ex:
         logging.error(f'Could not set telephone. Cause: {ex}. Time: {time.asctime()}')
         return
-    keyboard = buttons.city_buttons(role, 'reg')
-    bot.send_message(message.from_user.id, 'Слідуйте далі!', reply_markup=buttons.del_button())
-    bot.send_message(message.chat.id, "А зараз оберіть Ваше місто:", reply_markup=keyboard)
+    bot.send_message(message.from_user.id, 'Вкажіть діючу пошту✉',
+                     reply_markup=buttons.del_button())
+    bot.register_next_step_handler(message, set_email, role)
 
 
 def set_acc_photo(message, reg):
@@ -1564,14 +1598,15 @@ def show_profile(user_id, role):
         bot.send_photo(user_id, photo=img,
                        caption=f"`Ім'я:` {instance[0].name} \n\n"
                                f"`Телефон:` {instance[0].telephone} \n\n"
-                       # f"`Пошта:` {instance[0].email} \n\n"
+                               f"`Пошта:` {instance[0].email} \n\n"
                                f"`Посилання в телеграмі:` @{instance[0].username} \n\n"
                                f"`Номер картки:` _*_"
-                               f"{(base64.standard_b64decode(instance[0].card)).decode('UTF-8')[-4:]} \n\n"
+                               f"{ 'Н/Д' if instance[0].card is None else (base64.standard_b64decode(instance[0].card)).decode('UTF-8')[-4:]} \n\n "
                                f"`Назва салону:` {instance[2]} \n\n"
                                f"`Місто:` {instance[3]} \n\n"
                                f"`Опис аккаунту:` {instance[0].details} \n\n"
-                               f"`Мій рейтинг:` {instance[1]} \n\n", parse_mode='markdown', reply_markup=keyboard)
+                               f"`Мій рейтинг:` {instance[1]} \n\n",
+                       parse_mode='markdown', reply_markup=keyboard)
         img.close()
     else:
         try:
@@ -1582,7 +1617,7 @@ def show_profile(user_id, role):
         bot.send_message(user_id,
                          f"`Ім'я:` {instance[0].name} \n\n"
                          f"`Телефон:` {instance[0].telephone} \n\n"
-                         # f"`Пошта:` {instance[0].email} \n\n"
+                         f"`Пошта:` {instance[0].email} \n\n"
                          f"`Посилання в телеграмі:` @{instance[0].username} \n\n"
                          f"`Місто:` {instance[2]} \n\n",
                          parse_mode='markdown', reply_markup=keyboard)

@@ -140,7 +140,7 @@ class Order(Base):
     master_id = Column(String(25), ForeignKey(Master.user_id))
     service_id = Column(Integer, ForeignKey(Service_type.id))
     day_id = Column(Integer, ForeignKey(Working_days.id))
-    date = Column(DateTime, default=datetime.datetime.utcnow)
+    order_date = Column(DateTime, default=datetime.datetime.utcnow)
     time = Column(String(11))
     prepaid = Column(Boolean, default=False)
     done = Column(Boolean, default=False)
