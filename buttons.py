@@ -740,7 +740,6 @@ def working_days_buttons(working_days, option):
 
 
 def reserve_day(working_days, master_id, service_id, next_week):
-    print(next_week)
     keyboard = types.InlineKeyboardMarkup()
     if working_days.__len__() < 1:
         return None

@@ -925,7 +925,6 @@ def callback_handler(call):
     elif 'reserve_day' in call.data:
         data = call.data.split(' ')
         # try:
-        print(data)
         day_det = get_day_details(data[1], data[5])
         service_det = get_service_by_id(data[3])
         # except Exception as ex:
