@@ -11,10 +11,8 @@ import schedule
 from config import token
 from multiprocessing import Process
 
-
 schedule.every().day.at('02:00').do(daily_update)
 schedule.every().monday.at('02:00').do(weekly_update)
-
 
 bot = telebot.TeleBot(token=token)
 data_path = os.curdir + '\\data\\'
@@ -25,6 +23,7 @@ def start(message):
     bot.clear_step_handler_by_chat_id(message.from_user.id)
     keyboard = buttons.choose_language_buttons()
     bot.send_message(message.from_user.id, 'Обери мову/Choose a language', reply_markup=keyboard)
+
 
 @bot.message_handler(commands=['menu'])
 def menu(message):
@@ -974,7 +973,6 @@ def callback_handler(call):
 
 
 def take_brake(message, call):
-
     if not calculations.regex_time(message):
         bot.send_message(message.chat.id, 'Формат часу: 1-15 – це буде одна '
                                           'година, 15 хвилин.')
@@ -1418,8 +1416,8 @@ def set_money_cost(message, service_id, segment, reg='1'):
         bot.send_message(message.from_user.id, 'Виконано!')
         edit_service(message.from_user.id, segment)
 
-def set_email(message, role, reg):
 
+def set_email(message, role, reg):
     if not re.match(r'^[a-z0-9A-Z]+[._]?[a-z0-9A-Z]+[@]\w+[.]\w{2,3}$', message.text):
         bot.send_message(message.chat.id, "Невірний формат електронної адреси")
         bot.send_message(message.chat.id, "Спробуйте ще раз!")
@@ -1492,7 +1490,7 @@ def show_orders(orders, user_id, master_flag, call):
                 return
 
         elif master_flag and not order.done:
-            keyboard.add(buttons.mark_as_done(order.id, call.message.message_id+counter))
+            keyboard.add(buttons.mark_as_done(order.id, call.message.message_id + counter))
         start_time = order.time.split('-')
         if service.__len__() < 1:
             bot.send_message(user_id, f'`Перерва` \n'
@@ -1500,15 +1498,18 @@ def show_orders(orders, user_id, master_flag, call):
                                       f'`День неділі:` {day[0].day_name} \n',
                              reply_markup=keyboard, parse_mode='markdown')
         else:
+            date = calculations.get_date_by_day_number(day[0].day_num, order.next_week).strftime("%Y-%m-%d")
             keyboard.add(buttons.mark_as_canceled_by_master(order.id, call.message.message_id + counter))
-            bot.send_message(user_id, f'`Назва послуги:` {str(service[0].name)} \n'
-                                      f'`Початок о:` {start_time[0]}-{start_time[1]}  \n'
-                                      f'`День неділі:` {day[0].day_name} \n'
-                                      f"`Ім'я майстра:`  {str(master[0].name)} \n"
-                                      f"`Телефон майстра:` {str(master[0].telephone)} \n"
-                                      f"`Ім'я клієнта:` {str(client[0].name)} \n"
-                                      f"`Телефон клієнта:` {str(client[0].telephone)} \n"
-                                      f"`Передплачено: ` {str(prepaid)} \n",
+            bot.send_message(user_id,
+                             f'`Назва послуги:` {str(service[0].name)} \n'
+                             f'`Початок о:` {start_time[0]}-{start_time[1]}  \n'
+                             f'`День неділі:` {day[0].day_name} \n'
+                             f'`Дата`: {date} \n'
+                             f"`Ім'я майстра:`  {str(master[0].name)} \n"
+                             f"`Телефон майстра:` {str(master[0].telephone)} \n"
+                             f"`Ім'я клієнта:` {str(client[0].name)} \n"
+                             f"`Телефон клієнта:` {str(client[0].telephone)} \n"
+                             f"`Передплачено: ` {str(prepaid)} \n",
                              reply_markup=keyboard, parse_mode='markdown')
         counter += 1
     bot.send_message(user_id, 'Повернутись у меню', reply_markup=buttons.to_menu())
@@ -1630,7 +1631,7 @@ def show_profile(user_id, role):
                                f"`Пошта:` {instance[0].email} \n\n"
                                f"`Посилання в телеграмі:` @{instance[0].username} \n\n"
                                f"`Номер картки:` _*_"
-                               f"{ 'Н/Д' if instance[0].card is None else (base64.standard_b64decode(instance[0].card)).decode('UTF-8')[-4:]} \n\n "
+                               f"{'Н/Д' if instance[0].card is None else (base64.standard_b64decode(instance[0].card)).decode('UTF-8')[-4:]} \n\n "
                                f"`Назва салону:` {instance[2]} \n\n"
                                f"`Місто:` {instance[3]} \n\n"
                                f"`Опис аккаунту:` {instance[0].details} \n\n"
@@ -1801,10 +1802,12 @@ def check_start_up_data():
     else:
         return
 
+
 def start_schedule():
     while True:
         schedule.run_pending()
         time.sleep(1)
+
 
 def start_bot():
     try:
