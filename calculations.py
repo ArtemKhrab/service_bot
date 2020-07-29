@@ -39,7 +39,10 @@ def get_date_by_day_number(day_num, next_week):
 def check_available_time(day_det, service_det, req=None, set_custom_time=False, take_brake=False):
     today = datetime.now().weekday()
     now = datetime.utcnow() + timedelta(hours=utc)
-    working_hours = day_det[0].working_hours.split('-')
+    try:
+        working_hours = day_det[0].working_hours.split('-')
+    except TypeError as tp:
+        return [None, 'Робочі години у майстра не виставлені']
     orders = day_det[1]
     time_item = datetime.now()
     if not take_brake:
