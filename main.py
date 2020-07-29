@@ -25,8 +25,9 @@ def start(message):
     bot.send_message(message.from_user.id, 'Обери мову/Choose a language', reply_markup=keyboard)
 
 
-@bot.message_handler(commands=['menu'])
+@bot.message_handler(regexp='^(меню)$')
 def menu(message):
+    bot.clear_step_handler_by_chat_id(message.from_user.id)
     try:
         flag = check_user(message.from_user.id)
     except Exception as ex:
@@ -34,8 +35,6 @@ def menu(message):
         logging.error(f'Could not check user. Cause: {ex}. Time: {time.asctime()}')
         return
     if not flag:
-        keyboard = buttons.choose_role_button_reg()
-        bot.send_message(message.from_user.id, "Спочатку зареєструйтесь!", reply_markup=keyboard)
         return
     else:
         to_menu(message.from_user.id)
@@ -140,7 +139,7 @@ def callback_handler(call):
             logging.error(f'Could not update placement. Cause: {ex}. Time: {time.asctime()}')
             session.rollback()
             return
-
+        bot.send_message(call.from_user.id, 'Місце роботи додано', reply_markup=buttons.keyboard_menu_button())
         if data[2] == 'reg':
             set_current_role(call.from_user.id, True)
             # keyboard = buttons.to_menu()
@@ -194,7 +193,7 @@ def callback_handler(call):
             else:
                 keyboard = buttons.to_menu()
                 bot.send_message(call.from_user.id, "Супер! Тепер ви зареєстровані 🥳",
-                                 reply_markup=keyboard)
+                                 reply_markup=buttons.keyboard_menu_button())
                 bot.answer_callback_query(call.id, text=" ", show_alert=False)
                 return
         else:
@@ -895,13 +894,19 @@ def callback_handler(call):
 
         elif data[1] == 'set_non_active':
             try:
-                response = edit_day(data[2], non_active=True)
+                days_next_week = get_day_details(data[2], '1')
+                days_cur_week = get_day_details(data[2])
+                if days_next_week[1].__len__() > 1 or days_cur_week[1].__len__() > 1:
+                    bot.send_message(call.from_user.id, 'На цей день є записи, ви не можете зробити його неактивник.'
+                                                        ' Спершу відмініть всі записи!')
+                else:
+                    response = edit_day(data[2], non_active=True)
+                    if response is None:
+                        logging.error('edit_day method: unknown option')
+                        return
             except Exception as ex:
                 logging.error(f'Could not update working hours. Cause: {ex}. Time: {time.asctime()}')
                 return
-
-            if response is None:
-                logging.error('edit_day method: unknown option')
 
             set_working_days(call, False, 'show')
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
@@ -1248,6 +1253,7 @@ def update_certificate_photo(message, ran, create, photo):
 
 
 def to_menu(user_id):
+
     try:
         if get_user_role(user_id):
             user_instance = get_master(user_id)

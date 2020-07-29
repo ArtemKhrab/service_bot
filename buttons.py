@@ -274,6 +274,10 @@ def send_contact():
     markup.add(types.KeyboardButton('Відправити контакт', request_contact=True))
     return markup
 
+def keyboard_menu_button():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton('Меню'))
+    return markup
 
 def del_button():
     return types.ReplyKeyboardRemove()
@@ -725,7 +729,8 @@ def working_days_buttons(working_days, option):
                                                 callback_data='set_working_days edit'))
         keyboard.add(types.InlineKeyboardButton(text="Додати робочий день",
                                                 callback_data='set_working_days add'))
-        keyboard.add(back_and_delete())
+        keyboard.add(types.InlineKeyboardButton(text="Меню",
+                                                callback_data='menu'))
         if text == '':
             text = 'Не додано жодного дня!'
         return [text, keyboard]
