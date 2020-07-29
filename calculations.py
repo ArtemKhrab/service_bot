@@ -41,7 +41,7 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False, 
     now = datetime.utcnow() + timedelta(hours=utc)
     try:
         working_hours = day_det[0].working_hours.split('-')
-    except TypeError as tp:
+    except Exception as ex:
         return [None, 'Робочі години у майстра не виставлені']
     orders = day_det[1]
     time_item = datetime.now()
