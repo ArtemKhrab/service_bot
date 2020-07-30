@@ -1635,21 +1635,21 @@ def show_profile(user_id, role):
             logging.error(f'Could not load profile photo. Cause: {ex}. Time: {time.asctime()}')
             img = open(data_path + 'default.jpeg', 'rb')
         bot.send_photo(user_id, photo=img,
-                       caption=f"`Ім'я:` "
+                       caption=f"Ім'я: "
                                f"{'Н/Д' if instance[0].name is None else instance[0].name} \n\n"
-                               f"`Телефон:` "
+                               f"Телефон: "
                                f"{'Н/Д' if instance[0].telephone is None else instance[0].telephone} \n\n"
-                               f"`Пошта:` "
+                               f"Пошта: "
                                f"{'Н/Д' if instance[0].email is None else instance[0].email} \n\n"
-                               f"`Посилання в телеграмі:` @{instance[0].username} \n\n"
-                               f"`Номер картки:` _*_"
+                               f"Посилання в телеграмі: @{instance[0].username} \n\n"
+                               f"Номер картки: *"
                                f"{'Н/Д' if instance[0].card is None else (base64.standard_b64decode(instance[0].card)).decode('UTF-8')[-4:]} \n\n "
-                               f"`Назва салону:` {instance[2]} \n\n"
-                               f"`Місто:` "
+                               f"Назва салону: {instance[2]} \n\n"
+                               f"Місто: "
                                f"{'Н/Д' if instance[3] is None else instance[3]} \n\n"
-                               f"`Опис аккаунту:` {instance[0].details} \n\n"
-                               f"`Мій рейтинг:` {instance[1]} \n\n",
-                       parse_mode='markdown', reply_markup=keyboard)
+                               f"Опис аккаунту: {instance[0].details} \n\n"
+                               f"Мій рейтинг: {instance[1]} \n\n",
+                       reply_markup=keyboard)
         img.close()
     else:
         try:
@@ -1658,12 +1658,12 @@ def show_profile(user_id, role):
             logging.error(f'Could not get client data. Cause: {ex}. Time: {time.asctime()}')
             return
         bot.send_message(user_id,
-                         f"`Ім'я:` {instance[0].name} \n\n"
-                         f"`Телефон:` {instance[0].telephone} \n\n"
-                         f"`Пошта:` {instance[0].email} \n\n"
-                         f"`Посилання в телеграмі:` @{instance[0].username} \n\n"
-                         f"`Місто:` {instance[1]} \n\n",
-                         parse_mode='markdown', reply_markup=keyboard)
+                         f"Ім'я: {instance[0].name} \n\n"
+                         f"Телефон: {instance[0].telephone} \n\n"
+                         f"Пошта: {instance[0].email} \n\n"
+                         f"Посилання в телеграмі: @{instance[0].username} \n\n"
+                         f"Місто: {instance[1]} \n\n",
+                         reply_markup=keyboard)
 
 
 def add_certificate(message):
