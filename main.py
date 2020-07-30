@@ -298,7 +298,7 @@ def callback_handler(call):
         data = call.data.split(' ')
         try:
 
-            if data == 'client':
+            if data[1] == 'client':
                 user_instance = get_client(call.from_user.id)
             else:
                 user_instance = get_master(call.from_user.id)
@@ -1253,7 +1253,6 @@ def update_certificate_photo(message, ran, create, photo):
 
 
 def to_menu(user_id):
-
     try:
         if get_user_role(user_id):
             user_instance = get_master(user_id)
@@ -1659,7 +1658,7 @@ def show_profile(user_id, role):
                          f"`Телефон:` {instance[0].telephone} \n\n"
                          f"`Пошта:` {instance[0].email} \n\n"
                          f"`Посилання в телеграмі:` @{instance[0].username} \n\n"
-                         f"`Місто:` {instance[2]} \n\n",
+                         f"`Місто:` {instance[1]} \n\n",
                          parse_mode='markdown', reply_markup=keyboard)
 
 

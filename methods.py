@@ -27,16 +27,13 @@ def get_point(user_id):
 
 
 def get_client(tg_id):
-    clients = session.query(Client).filter_by(user_id=tg_id)
-    user_instance = []
-    for row in clients:
-        user_instance = row
-    response = session.query(City).filter_by(id=user_instance.city_id)
-    city = 'Н/Д'
-    for row in response:
-        city = row.name
-
-    return [user_instance, city]
+    client = session.query(Client).filter_by(user_id=tg_id).all()
+    response = session.query(City).filter_by(id=client[0].city_id).all()
+    if response is None:
+        city = 'Н/Д'
+    else:
+        city = response[0].name
+    return [client[0], city]
 
 
 def get_master(tg_id):
