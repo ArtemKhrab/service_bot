@@ -42,7 +42,8 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False, 
     try:
         working_hours = day_det[0].working_hours.split('-')
     except Exception as ex:
-        return [None, 'У майстра не виставлені робочі години.']
+        return [None, 'На жаль, майстер не вказав робочі години на даний період. '
+                      'Будь ласка, зверніться до адміністратора: номер телефону.']
     orders = day_det[1]
     time_item = datetime.now()
     if not take_brake:
@@ -69,7 +70,7 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False, 
         if master_start_time <= user_time_start and master_end_time >= user_time_end:
 
             if not orders:
-                return [req, "Работает!!!!!!!!1"]
+                return [req, f"Вас записно на {req}"]
             else:
 
                 for order in orders:
@@ -77,14 +78,14 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False, 
                     order_start = time_item.replace(hour=int(order_time[0]), minute=int(order_time[1]))
                     order_end = time_item.replace(hour=int(order_time[2]), minute=int(order_time[3]))
                     if (order_start <= user_time_start < order_end) or (order_start < user_time_end <= order_end):
-                        return [None, "Занято"]
+                        return [None, "Даний час вже зайнято. Будь ласка, оберіть інший"]
 
                 else:
-                    return [req, "Работает!!!!!2"]
+                    return [req, f"Вас записно на {req}"]
 
         else:
             return [None,
-                    'Майстер не працьє в заданий час, або він не встигне виконати роботу, оберіть інший час']
+                    'Майстер не працює в заданий час, або він не встигне виконати роботу, оберіть інший час']
     else:
 
         if not orders:
@@ -104,7 +105,7 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False, 
                 time_slots.append(str((master_end_time - timedelta(hours=int(service_time[0]),
                                                                    minutes=int(service_time[1]))).strftime(
                     "%H-%M")))
-            return [time_slots, "Работает!!!!!!!3"]
+            return [time_slots, "Оберіть час із запропонованого, або задайте свій"]
         else:
             quantity = orders.__len__()-1
             counter = 0
@@ -132,4 +133,4 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False, 
                             service_time_cost:
                         time_slots.append(str(order_end.strftime("%H-%M")))
                 counter += 1
-            return [time_slots, "Работает!!!!!!4"]
+            return [time_slots, "Оберіть час із запропонованого, або задайте свій"]

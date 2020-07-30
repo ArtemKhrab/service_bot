@@ -604,3 +604,14 @@ def weekly_update():
         update({Order.next_week: False}, synchronize_session=False)
     session.commit()
 
+def get_segments_for_master(master_id):
+    services = session.query(Service_type.segment_id).filter(Service_type.master_id == master_id).all()
+    segments = []
+    for item in services:
+        segment = session.query(Service_segment.name).filter(Service_segment.id == item[0]).all()
+        segments.append(segment[0].name)
+    return set(segments)
+
+
+
+

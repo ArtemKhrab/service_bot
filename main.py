@@ -21,8 +21,29 @@ data_path = os.curdir + '\\data\\'
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.clear_step_handler_by_chat_id(message.from_user.id)
-    keyboard = buttons.choose_language_buttons()
-    bot.send_message(message.from_user.id, 'Обери мову/Choose a language', reply_markup=keyboard)
+
+    try:
+        flag = check_user(message.from_user.id)
+    except Exception as ex:
+        session.rollback()
+        logging.error(f'Could not check user. Cause: {ex}. Time: {time.asctime()}')
+        return
+
+    # keyboard = buttons.choose_language_buttons()
+    # bot.send_message(message.from_user.id, 'Обери мову/Choose a language', reply_markup=keyboard)
+
+    greetings = ('Привіт, мене звуть Лола! 💁‍♀️\n\n'
+                 '🤖 Я робот і буду виконувати роль твого'
+                 ' персонального менеджера. \n\n')
+
+    if flag:
+        keyboard = buttons.choose_role_button_menu()
+    else:
+        keyboard = buttons.choose_role_button_reg()
+        greetings += 'Але перед початком треба  зареєструватись👇🏻'
+
+    bot.send_message(message.from_user.id, greetings,
+                     reply_markup=keyboard)
 
 
 @bot.message_handler(regexp='^(меню)$')
@@ -232,7 +253,7 @@ def callback_handler(call):
         end_index = certificates.__len__() - 1
 
         if end_index == -1:
-            bot.answer_callback_query(call.id, text="На жаль, сертифікати не загружені  :(!")
+            bot.answer_callback_query(call.id, text="На жаль, сертифікати не завантажені  :(!")
             return
 
         index = 0
@@ -263,7 +284,7 @@ def callback_handler(call):
         end_index = services.__len__() - 1
 
         if end_index == -1:
-            bot.answer_callback_query(call.id, text="На жаль, роботи не загружені  :(!")
+            bot.answer_callback_query(call.id, text="На жаль, роботи не завантажені  :(!")
             return
 
         index = 0
@@ -512,7 +533,7 @@ def callback_handler(call):
             session.rollback()
             return
         if orders.__len__() < 1:
-            bot.answer_callback_query(call.id, text="Замовлення не знайденні")
+            bot.answer_callback_query(call.id, text="Замовлення не знайдені")
             return
         try:
             show_orders(orders, call.from_user.id, False, call)
@@ -530,7 +551,7 @@ def callback_handler(call):
             session.rollback()
             return
         if orders.__len__() < 1:
-            bot.answer_callback_query(call.id, text="Замовлення не знайденні")
+            bot.answer_callback_query(call.id, text="Замовлення не знайдені")
             return
         try:
             show_orders(orders, call.from_user.id, True, call)
@@ -570,7 +591,7 @@ def callback_handler(call):
             if order.client_id_master_acc == call.from_user.id:
                 pass
             else:
-                bot.send_message(order.client_id_master_acc, f'Ваша бронь була відмінена майстром '
+                bot.send_message(order.client_id_master_acc, f'Ваше бронювання було відмінено майстром '
                                                              f'{time.localtime().tm_hour}:{time.localtime().tm_min} '
                                                              f'{time.localtime().tm_mon}.{time.localtime().tm_mday} \n'
                                                              f"Ім`я майстра: {master[0].name} \n"
@@ -924,6 +945,33 @@ def callback_handler(call):
             set_working_days(call, False, 'show')
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
+
+    elif 'show_certificates_settings' in call.data:
+        data = call.data.split(' ')
+        keyboard = buttons.show_certificates(data[1])
+        bot.send_message(call.from_user.id, 'Меню сертифікатів:', reply_markup=keyboard)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
+
+    elif 'show_sample_services_settings' in call.data:
+        data = call.data.split(' ')
+        keyboard = buttons.show_sample_services(data[1])
+        bot.send_message(call.from_user.id, 'Меню прикладів робіт:', reply_markup=keyboard)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
+
+    elif 'show_services_settings' in call.data:
+        data = call.data.split(' ')
+        keyboard = buttons.show_service(data[1])
+        bot.send_message(call.from_user.id, 'Меню послуг:', reply_markup=keyboard)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
+
+    elif call.data == 'show_orders_master':
+        keyboard = buttons.check_order_menu()
+        bot.send_message(call.from_user.id, 'Меню записів:', reply_markup=keyboard)
+        bot.answer_callback_query(call.id, text=" ", show_alert=False)
+        return
 
     elif 'reserve_day' in call.data:
         data = call.data.split(' ')
@@ -1460,7 +1508,6 @@ def set_time_cost(message, service_id, segment, reg='1'):
 
     if reg == 'reg':
         keyboard = buttons.to_menu()
-        keyboard.add(buttons.back())
         keyboard.add(buttons.add_more_button(segment))
         bot.send_message(message.chat.id, 'Процедуру додано 👍', reply_markup=keyboard)
     else:
@@ -1504,7 +1551,7 @@ def show_orders(orders, user_id, master_flag, call):
         if service.__len__() < 1:
             bot.send_message(user_id, f'`Перерва` \n'
                                       f'`Час:` {order.time}  \n'
-                                      f'`День неділі:` {day[0].day_name} \n',
+                                      f'`День тижня:` {day[0].day_name} \n',
                              reply_markup=keyboard, parse_mode='markdown')
         else:
             date = calculations.get_date_by_day_number(day[0].day_num, order.next_week).strftime("%Y-%m-%d")
@@ -1512,7 +1559,7 @@ def show_orders(orders, user_id, master_flag, call):
             bot.send_message(user_id,
                              f'`Назва послуги:` {str(service[0].name)} \n'
                              f'`Початок о:` {start_time[0]}-{start_time[1]}  \n'
-                             f'`День неділі:` {day[0].day_name} \n'
+                             f'`День тижня:` {day[0].day_name} \n'
                              f'`Дата`: {date} \n'
                              f"`Ім'я майстра:`  {str(master[0].name)} \n"
                              f"`Телефон майстра:` {str(master[0].telephone)} \n"
@@ -1586,11 +1633,13 @@ def set_acc_photo(message, reg):
         return
 
     if reg == 'reg':
+        # bot.send_message(message.from_user.id,
+        #                  'Напишіть номер картки, на яку будуть '
+        #                  'надходити кошти.')
+        # bot.register_next_step_handler(message, set_card)
         bot.send_message(message.from_user.id,
-                         'Напишіть номер картки, на яку будуть '
-                         'надходити кошти.'
-                         'Також рекомендую видалити його з чату 😉')
-        bot.register_next_step_handler(message, set_card)
+                         'Напишіть опис до аккаунту, що ви вмієте і тд.')
+        bot.register_next_step_handler(message, set_acc_details)
     else:
         edit_profile(message.from_user.id, 'master')
 
@@ -1642,8 +1691,8 @@ def show_profile(user_id, role):
                                f"Пошта: "
                                f"{'Н/Д' if instance[0].email is None else instance[0].email} \n\n"
                                f"Посилання в телеграмі: @{instance[0].username} \n\n"
-                               f"Номер картки: *"
-                               f"{'Н/Д' if instance[0].card is None else (base64.standard_b64decode(instance[0].card)).decode('UTF-8')[-4:]} \n\n "
+                               # f"Номер картки: *"
+                               # f"{'Н/Д' if instance[0].card is None else (base64.standard_b64decode(instance[0].card)).decode('UTF-8')[-4:]} \n\n "
                                f"Назва салону: {instance[2]} \n\n"
                                f"Місто: "
                                f"{'Н/Д' if instance[3] is None else instance[3]} \n\n"
@@ -1795,9 +1844,19 @@ def show_masters(index, end_index, masters, user_id):
     except Exception as ex:
         logging.error(f'Could not load master image. Cause: {ex}. Time: {time.asctime()}')
         img = open(data_path + 'default.jpeg', 'rb')
+    try:
+        segments = get_segments_for_master(masters[int(index)].user_id)
+        print(segments)
+    except Exception as ex:
+        logging.error(f'Could not get master segments. Cause: {ex}. Time: {time.asctime()}')
+        return
+    segments_text = ''
+    for segment in segments:
+        segments_text += '🔸 ' + segment + '\n'
     bot.send_photo(user_id, photo=img,
                    caption=f"`Ім'я:` {masters[int(index)].name} \n\n"
-                           f"`Опис: ` {masters[int(index)].details} \n\n"
+                           f"`Опис:` {masters[int(index)].details} \n\n"
+                           f'`Категорії робіт, які виконує майстер`:\n{segments_text} \n'
                            f"`Рейтинг: `" + "⭐️" * int(get_point(masters[int(index)].user_id))
                            + "\n\n", reply_markup=keyboard,
                    parse_mode='markdown')
