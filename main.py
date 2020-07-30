@@ -945,6 +945,10 @@ def callback_handler(call):
             return
 
         response = calculations.check_available_time(day_det, service_det)
+        print(response)
+        if response[0] is None:
+            bot.send_message(call.from_user.id, response[1])
+            return
         keyboard = buttons.set_hours(data[2], data[3], data[1], data[5], response[0])
         bot.send_message(call.from_user.id, response[1], reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
