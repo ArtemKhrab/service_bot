@@ -1697,8 +1697,9 @@ def set_certificate_details(message, image):
 
 
 def get_photo(message):
-    photo_id = message.json['photo'][0]['file_id']
-    return bot.download_file(bot.get_file(photo_id).file_path)
+    raw = message.photo[2].file_id
+    file_info = bot.get_file(raw)
+    return bot.download_file(file_info.file_path)
 
 
 def add_sample_service(message):
