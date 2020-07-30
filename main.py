@@ -326,8 +326,7 @@ def callback_handler(call):
             bot.answer_callback_query(call.id, text="На жаль, у даному салоні майстри ще не зареєестровані :(")
             return
 
-        bot.send_message(call.from_user.id, 'А зараз оберіть майстра',
-                         reply_markup=buttons.del_button())
+        bot.send_message(call.from_user.id, 'А зараз оберіть майстра', reply_markup=buttons.keyboard_menu_button())
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         index = 0
         try:
@@ -1370,6 +1369,7 @@ def edit_telephone(message, role):
         logging.error(f'Could not update telephone. Cause: {ex}. Input: {message.text}. Time: {time.asctime()}')
         return
     bot.send_message(message.from_user.id, 'Змінено!', reply_markup=buttons.del_button())
+    bot.send_message(message.from_user.id, "Повертаю вашу кнопочку 'меню'", reply_markup=buttons.keyboard_menu_button())
     edit_profile(message.from_user.id, role)
 
 
