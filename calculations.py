@@ -42,7 +42,7 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False, 
     try:
         working_hours = day_det[0].working_hours.split('-')
     except Exception as ex:
-        return [None, 'Робочі години у майстра не виставлені']
+        return [None, 'У майстра не виставлені робочі години.']
     orders = day_det[1]
     time_item = datetime.now()
     if not take_brake:
