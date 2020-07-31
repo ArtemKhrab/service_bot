@@ -324,7 +324,8 @@ def get_service_names(user_id, segment):
 
 
 def get_days(user_id):
-    data = session.query(Working_days).order_by(asc(Working_days.day_num)).filter(Working_days.master_id == user_id).all()
+    data = session.query(Working_days).order_by(asc(Working_days.day_num)).filter(
+        Working_days.master_id == user_id).all()
     if data is None:
         return []
     else:
@@ -461,12 +462,14 @@ def edit_day(day_id, non_active=False, set_time=False, time=None, active=False):
 
 def get_available_days(master_id, current_day_num, next_week):
     if next_week == '0':
-        data = session.query(Working_days).order_by(asc(Working_days.day_num)).filter(Working_days.master_id == master_id,
-                                                  Working_days.day_num >= int(current_day_num),
-                                                  Working_days.non_active == 0).all()
+        data = session.query(Working_days).order_by(asc(Working_days.day_num)).filter(
+            Working_days.master_id == master_id,
+            Working_days.day_num >= int(current_day_num),
+            Working_days.non_active == 0).all()
     else:
-        data = session.query(Working_days).order_by(asc(Working_days.day_num)).filter(Working_days.master_id == master_id,
-                                                  Working_days.non_active == 0).all()
+        data = session.query(Working_days).order_by(asc(Working_days.day_num)).filter(
+            Working_days.master_id == master_id,
+            Working_days.non_active == 0).all()
     if data is None:
         return []
     else:
@@ -487,8 +490,8 @@ def get_day_details(day_id, next_week='0'):
 def create_order(master_id, client_id, day_id, time_slot, service_id, next_week, take_brake=False):
     try:
         service = session.query(Service_type).filter(Service_type.id == service_id).all()
-    except:
-        print(Exception)
+    except Exception as ex:
+        print(ex)
         return
     if take_brake:
         if get_user_role(client_id):
@@ -548,7 +551,9 @@ def get_order_by_id(order_id):
 
 
 def get_orders_for_client(client_id, option):
+    instance = None
     if get_user_role(client_id):
+
         if option == '0':
             instance = session.query(Order).filter(Order.client_id_master_acc == client_id,
                                                    Order.done == '0', Order.canceled_by_master == '0',
@@ -578,6 +583,7 @@ def get_orders_for_client(client_id, option):
             instance = session.query(Order).filter(Order.client_id == client_id,
                                                    Order.canceled_by_master == '1' or Order.canceled_by_client == '1' or
                                                    Order.canceled_by_system == '1').all()
+
     return instance
 
 
@@ -593,7 +599,7 @@ def get_cur_day(master_id, cur_day):
 
 
 def daily_update():
-    session.query(Order).filter(Working_days.day_num == calculations.get_current_day()-1, Order.next_week == '0',
+    session.query(Order).filter(Working_days.day_num == calculations.get_current_day() - 1, Order.next_week == '0',
                                 Order.done == '0'). \
         update({Order.canceled_by_system: True}, synchronize_session=False)
     session.commit()
@@ -604,6 +610,7 @@ def weekly_update():
         update({Order.next_week: False}, synchronize_session=False)
     session.commit()
 
+
 def get_segments_for_master(master_id):
     services = session.query(Service_type.segment_id).filter(Service_type.master_id == master_id).all()
     segments = []
@@ -611,7 +618,3 @@ def get_segments_for_master(master_id):
         segment = session.query(Service_segment.name).filter(Service_segment.id == item[0]).all()
         segments.append(segment[0].name)
     return set(segments)
-
-
-
-

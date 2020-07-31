@@ -212,7 +212,7 @@ def callback_handler(call):
                 bot.answer_callback_query(call.id, text=" ", show_alert=False)
                 return
             else:
-                keyboard = buttons.to_menu()
+                # keyboard = buttons.to_menu()
                 bot.send_message(call.from_user.id, "Супер! Тепер ви зареєстровані 🥳",
                                  reply_markup=buttons.keyboard_menu_button())
                 bot.answer_callback_query(call.id, text=" ", show_alert=False)

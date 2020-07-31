@@ -42,6 +42,7 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False, 
     try:
         working_hours = day_det[0].working_hours.split('-')
     except Exception as ex:
+        print(ex)
         return [None, 'На жаль, майстер не вказав робочі години на даний період. '
                       'Будь ласка, зверніться до адміністратора: номер телефону.']
     orders = day_det[1]
@@ -70,7 +71,7 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False, 
         if master_start_time <= user_time_start and master_end_time >= user_time_end:
 
             if not orders:
-                return [req, f"Вас записно на {req}"]
+                return [req, f"Вас записано на {req}"]
             else:
 
                 for order in orders:

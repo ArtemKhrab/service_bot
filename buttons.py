@@ -609,8 +609,8 @@ def get_services(master_id, user_id, segment, reservation):
             counter += 1
         keyboard.add(types.InlineKeyboardButton(text='Редагувати',
                                                 callback_data='edit_service ' + segment),
-                     types.InlineKeyboardButton(text="⬅ Повернутися",
-                                                callback_data='del_message'))
+                     types.InlineKeyboardButton(text="Головне меню 🏠",
+                                                callback_data='menu'))
     else:
         if segment == '4':
             pass  # add empty time slot
