@@ -164,7 +164,7 @@ def callback_handler(call):
         if data[2] == 'reg':
             set_current_role(call.from_user.id, True)
             # keyboard = buttons.to_menu()
-            add_new_service(call)
+            add_new_service(call, True)
             # bot.send_message(call.from_user.id, "Супер! Тепер ви зареєстровані і до вас вже можна записуватись 🥳",
             #                  reply_markup=keyboard)
         else:
@@ -431,7 +431,11 @@ def callback_handler(call):
             return
 
         if (str(call.from_user.id) is str(data[2])) and (data[3] != 'reservation'):
-            bot.send_message(call.from_user.id, 'Уточніть процедуру 🗂',
+            print(keyboard[1])
+            segment_text = 'Уточніть процедуру 🗂' if keyboard[1] is not None else \
+                'Послуги для цієї категорії не визначені. ' \
+                'Зверніться до адміністратора для того, щоб додати список послуг'
+            bot.send_message(call.from_user.id, segment_text,
                              reply_markup=keyboard[1])
         else:
             bot.send_message(call.from_user.id, keyboard[0],
@@ -454,8 +458,11 @@ def callback_handler(call):
             session.rollback()
             return
         keyboard = buttons.service_buttons(data[1], services_name)
-        bot.send_message(call.from_user.id, 'Тепер уточніть процедуру 🗂',
-                         reply_markup=keyboard)
+        segment_text = 'Уточніть процедуру 🗂' if keyboard[1] else \
+            'Послуги для цієї категорії не визначені. ' \
+            'Зверніться до адміністратора для того, щоб додати список послуг'
+        bot.send_message(call.from_user.id, segment_text,
+                         reply_markup=keyboard[0])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
     elif 'add_instance' in call.data:
@@ -1187,8 +1194,8 @@ def set_working_days(call, again, option):
         return
 
 
-def add_new_service(call):
-    keyboard = buttons.service_segments(call.from_user.id, True)
+def add_new_service(call, reg=False):
+    keyboard = buttons.service_segments(call.from_user.id, True, reg=reg)
     bot.send_message(call.from_user.id,
                      'Оберіть сегмент послуг, що надаєте 🧚🏻‍♀',
                      reply_markup=keyboard)

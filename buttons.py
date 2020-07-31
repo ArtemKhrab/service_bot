@@ -280,7 +280,7 @@ def master_menu_2():
     return keyboard
 
 
-def service_segments(master_id, add, res=None):
+def service_segments(master_id, add, res=None, reg=False):
     segments = methods.get_service_segments()
     keyboard = types.InlineKeyboardMarkup()
 
@@ -303,9 +303,8 @@ def service_segments(master_id, add, res=None):
             if (str(segment.name) != 'Визначити час перерви') or \
                     (str(segment.name) == 'Визначити час перерви' and res is not None):
                 keyboard.add(callback_button)
-
-        callback_button = back_and_delete()
-        keyboard.add(callback_button)
+    if not reg:
+        keyboard.add(back_and_delete())
     return keyboard
 
 
@@ -727,7 +726,9 @@ def service_buttons(segment, services_name):
 
     else:
         service = []
-
+    if not service:
+        keyboard.add(back_and_delete())
+        return [keyboard, False]
     for service_name in service:
 
         if service_name not in data:
@@ -735,8 +736,8 @@ def service_buttons(segment, services_name):
                                                          callback_data=f'add_instance {service_name}'
                                                                        + ' ' + str(segment))
             keyboard.add(callback_button)
-
-    return keyboard
+    keyboard.add(back_and_delete())
+    return [keyboard, True]
 
 
 def add_more_button():
@@ -764,7 +765,7 @@ def edit_profile_buttons(role):
     if role == 'master':
         # callback_button = types.InlineKeyboardButton(text="Номер картки",
         #                                              callback_data='profile_edit card')
-        keyboard.add(callback_button)
+        # keyboard.add(callback_button)
         callback_button = types.InlineKeyboardButton(text="Салон",
                                                      callback_data='profile_edit placement')
         keyboard.add(callback_button)
@@ -775,7 +776,7 @@ def edit_profile_buttons(role):
                                                      callback_data='profile_edit photo')
         keyboard.add(callback_button)
 
-    keyboard.add(types.InlineKeyboardButton(text="Меню",
+    keyboard.add(types.InlineKeyboardButton(text="Головне меню",
                                                  callback_data='menu'))
     return keyboard
 
