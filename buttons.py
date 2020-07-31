@@ -91,28 +91,28 @@ def choose_language_buttons():
 
 def client_menu(role):
     keyboard = types.InlineKeyboardMarkup()
-    callback_button = types.InlineKeyboardButton(text="Записатись на процедуру",
+    callback_button = types.InlineKeyboardButton(text="Записатись на процедуру 📝",
                                                  callback_data=f'order_1 {role}')
     keyboard.add(callback_button)
-    callback_button = types.InlineKeyboardButton(text="Улюблені майстри",
+    callback_button = types.InlineKeyboardButton(text="Улюблені майстри 💎",
                                                  callback_data='saved_masters')
     keyboard.add(callback_button)
 
-    callback_button = types.InlineKeyboardButton(text="Мої записи",
+    callback_button = types.InlineKeyboardButton(text="Мої записи 🗓",
                                                  callback_data='pre_check_order')
     keyboard.add(callback_button)
 
-    callback_button = types.InlineKeyboardButton(text="Налаштування",
+    callback_button = types.InlineKeyboardButton(text="Налаштування ⚙️",
                                                  callback_data='settings_client')
     keyboard.add(callback_button)
     return keyboard
 
 def client_settings():
     keyboard = types.InlineKeyboardMarkup()
-    callback_button = types.InlineKeyboardButton(text="Мій профіль",
+    callback_button = types.InlineKeyboardButton(text="Мій профіль 🌿",
                                                  callback_data='check_profile')
     keyboard.add(callback_button)
-    callback_button = types.InlineKeyboardButton(text="Змінити роль",
+    callback_button = types.InlineKeyboardButton(text="Змінити роль 👤",
                                                  callback_data='choose role menu')
     keyboard.add(callback_button)
     return keyboard
