@@ -1325,7 +1325,7 @@ def to_menu(user_id):
     except Exception as ex:
         logging.error(f'Could not get user data. Func: to_menu . Cause: {ex}. Time: {time.asctime()}')
         return
-    bot.send_message(user_id, 'Меню', reply_markup=keyboard)
+    bot.send_message(user_id, 'Головне меню 🏠', reply_markup=keyboard)
 
 
 def edit_sample_service(service_id, user_id):
