@@ -290,7 +290,7 @@ def service_segments(master_id, add, res=None):
                                                          callback_data='service_segment ' + str(segment.id) + ' '
                                                                        + str(master_id))
 
-            if str(segment.name) != 'Виділити вільний час':
+            if str(segment.name) != 'Визначити час перерви':
                 keyboard.add(callback_button)
 
     else:
@@ -300,8 +300,8 @@ def service_segments(master_id, add, res=None):
                                                                        + str(master_id) + ' ' +
                                                                        (res if res == 'reservation' else 'N'))
 
-            if (str(segment.name) != 'Виділити вільний час') or \
-                    (str(segment.name) == 'Виділити вільний час' and res is not None):
+            if (str(segment.name) != 'Визначити час перерви') or \
+                    (str(segment.name) == 'Визначити час перерви' and res is not None):
                 keyboard.add(callback_button)
 
         callback_button = back_and_delete()
@@ -415,8 +415,6 @@ def moving_services_buttons(index, end_index, data_id, master_id, user_id):
                                                                    ' ' + str(end_index) + ' ' + str(master_id))
         move_buttons.append(callback_button)
     keyboard.add(*move_buttons)
-
-
 
     return keyboard
 
