@@ -252,6 +252,8 @@ def update_order_as_canceled_by_master(order_id):
     session.query(Order).filter(Order.id == order_id). \
         update({Order.canceled_by_master: True}, synchronize_session=False)
     session.commit()
+    order = session.query(Order).filter(Order.id == order_id).all()
+    time_slots_managment.process_calendar_instance(delete=True, calendar_instance_id=order[0].g_calendar_id)
 
 
 def check_rating(user_id, master_id):
@@ -521,23 +523,28 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
                          time=time_slot + f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
                          money_cost=service[0].money_cost, next_week=(True if next_week == '1' else False))
         client = get_client(client_id)
-    master = get_master(master_id)
     session.add(instance)
+    session.flush()
     session.commit()
+    master = get_master(master_id)
     day = get_day_details(day_id)
     try:
-        time_slots_managment.create_calendar_instance(title=service[0].name,
-                                                      description=f'{service[0].name}. \n'
-                                                                  f'Майстер: {master[0].name} .\n'
-                                                                  f'Телефон клієнта: '
-                                                                  f'{client[0].telephone} \n',
-                                                      start_end_time=time_slot + f'-{str(service_time.strftime("%H-%M"))}',
-                                                      day_num=day[0].day_num,
-                                                      master_email=master[0].email,
-                                                      next_week=next_week)
+        g_event_id = time_slots_managment.process_calendar_instance(title=service[0].name,
+                                                                    description=f'{service[0].name}. \n'
+                                                                                f'Майстер: {master[0].name} .\n'
+                                                                                f'Телефон клієнта: '
+                                                                                f'{client[0].telephone} \n',
+                                                                    start_end_time=
+                                                                    time_slot + f'-{str(service_time.strftime("%H-%M"))}',
+                                                                    day_num=day[0].day_num,
+                                                                    master_email=master[0].email,
+                                                                    next_week=next_week)
     except Exception as ex:
         print(ex)
         return
+    session.query(Order).filter(Order.id == instance.id). \
+        update({Order.g_calendar_id: g_event_id}, synchronize_session=False)
+    session.commit()
 
 
 def get_orders_for_master(master_id, done):
@@ -599,9 +606,18 @@ def get_cur_day(master_id, cur_day):
 
 
 def daily_update():
-    session.query(Order).filter(Working_days.day_num == calculations.get_current_day() - 1, Order.next_week == '0',
+    orders = session.query(Order).filter(Working_days.day_num == calculations.get_current_day() - 1,
+                                         Order.next_week == '0',
+                                         Order.done == '0').all()
+    session.query(Order).filter(Working_days.day_num == calculations.get_current_day() - 1,
+                                Order.next_week == '0',
                                 Order.done == '0'). \
         update({Order.canceled_by_system: True}, synchronize_session=False)
+    for item in orders:
+        try:
+            time_slots_managment.process_calendar_instance(delete=True, calendar_instance_id=item.g_calendar_id)
+        except Exception as ex:
+            print(ex)
     session.commit()
 
 
@@ -618,3 +634,15 @@ def get_segments_for_master(master_id):
         segment = session.query(Service_segment.name).filter(Service_segment.id == item[0]).all()
         segments.append(segment[0].name)
     return set(segments)
+
+
+def delete_from_favorites(master_id, user_id):
+    if get_user_role(user_id):
+        session.query(Saved_masters).filter(Saved_masters.master_id == master_id,
+                                            Saved_masters.client_id_master_acc == user_id). \
+            delete()
+    else:
+        session.query(Saved_masters).filter(Saved_masters.master_id == master_id,
+                                            Saved_masters.client_id == user_id). \
+            delete()
+    session.commit()

@@ -107,6 +107,7 @@ def client_menu(role):
     keyboard.add(callback_button)
     return keyboard
 
+
 def client_settings():
     keyboard = types.InlineKeyboardMarkup()
     callback_button = types.InlineKeyboardButton(text="Мій профіль 🌿",
@@ -133,6 +134,7 @@ def client_check_order_buttons():
                                                  callback_data='del_message')
     keyboard.add(callback_button)
     return keyboard
+
 
 def main_menu_master(user_id):
     keyboard = types.InlineKeyboardMarkup()
@@ -174,7 +176,7 @@ def check_order_menu():
 
 def master_menu_1(user_id):
     keyboard = types.InlineKeyboardMarkup()
-    callback_button = types.InlineKeyboardButton(text="Мої дані 👩",
+    callback_button = types.InlineKeyboardButton(text="Мої дані 🌿",
                                                  callback_data='check_profile')
     keyboard.add(callback_button)
     callback_button = types.InlineKeyboardButton(text="Мій графік 🗓",
@@ -280,7 +282,7 @@ def master_menu_2():
     return keyboard
 
 
-def service_segments(master_id, add, res=None, reg=False):
+def service_segments(master_id, add, user_id, res=None, reg=False):
     segments = methods.get_service_segments()
     keyboard = types.InlineKeyboardMarkup()
 
@@ -299,9 +301,8 @@ def service_segments(master_id, add, res=None, reg=False):
                                                          callback_data='order_service ' + str(segment.id) + ' '
                                                                        + str(master_id) + ' ' +
                                                                        (res if res == 'reservation' else 'N'))
-
             if (str(segment.name) != 'Визначити час перерви') or \
-                    (str(segment.name) == 'Визначити час перерви' and res is not None):
+                    (str(segment.name) == 'Визначити час перерви' and res is not None and master_id == str(user_id)):
                 keyboard.add(callback_button)
     if not reg:
         keyboard.add(back_and_delete())
@@ -343,10 +344,12 @@ def send_contact():
     markup.add(types.KeyboardButton('Відправити контакт', request_contact=True))
     return markup
 
+
 def keyboard_menu_button():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(types.KeyboardButton('Головне меню 🏠'))
     return markup
+
 
 def del_button():
     return types.ReplyKeyboardRemove()
@@ -456,40 +459,14 @@ def edit_certificate_buttons(certificate_id, user_id):
     return keyboard
 
 
-# def date_buttons():
-#     keyboard = types.InlineKeyboardMarkup(row_width=3)
-#
-#     for i in range(0, 9, 3):
-#         date_creation_1 = datetime.date.today() + datetime.timedelta(days=i)
-#         date_creation_1 = date_creation_1.strftime("%y.%m.%d")
-#         callback_button_1 = types.InlineKeyboardButton(text=str(date_creation_1),
-#                                                        callback_data='date_create ' + str(date_creation_1))
-#         date_creation_2 = datetime.date.today() + datetime.timedelta(days=i + 1)
-#         date_creation_2 = date_creation_2.strftime("%y.%m.%d")
-#         callback_button_2 = types.InlineKeyboardButton(text=str(date_creation_2),
-#                                                        callback_data='date_create ' + str(date_creation_2))
-#         date_creation_3 = datetime.date.today() + datetime.timedelta(days=i + 2)
-#         date_creation_3 = date_creation_3.strftime("%y.%m.%d")
-#         callback_button_3 = types.InlineKeyboardButton(text=str(date_creation_3),
-#                                                        callback_data='date_create ' + str(date_creation_3))
-#         keyboard.add(callback_button_1, callback_button_2, callback_button_3)
-#
-#     keyboard.add(back_and_delete())
-#     return keyboard
-
-
 def order_placement_buttons(city_id):
     placements = methods.get_placements(city_id)
     text = 'Список доступних салонів:'
     keyboard = types.InlineKeyboardMarkup()
-    # counter = 1
-    # buttons = []
 
     for place in placements:
         callback_button = types.InlineKeyboardButton(text=f'{place.name}, {place.address}',
                                                      callback_data='order_placement ' + str(place.id))
-        # counter += 1
-        # buttons.append(callback_button)
 
         keyboard.add(callback_button)
     return [text, keyboard, placements]
@@ -501,17 +478,20 @@ def send_location():
     return markup
 
 
-def moving_masters_buttons(index, end_index, master_id, placement_id, user_id):
+def moving_masters_buttons(index, end_index, master_id, placement_id, is_saved, message_id):
     keyboard = types.InlineKeyboardMarkup()
-    if str(master_id) != str(user_id):
-        callback_button = types.InlineKeyboardButton(text="Детальніше",
-                                                     callback_data=f'check_more_details {master_id}')
-        keyboard.add(callback_button)
-        callback_button = types.InlineKeyboardButton(text="Обрати послугу",
-                                                     callback_data='check_services' + ' ' + str(master_id))
-        keyboard.add(callback_button)
+    # if str(master_id) != str(user_id):
+    callback_button = types.InlineKeyboardButton(text="Детальніше",
+                                                 callback_data=f'check_more_details {master_id}')
+    keyboard.add(callback_button)
+    callback_button = types.InlineKeyboardButton(text="Обрати послугу",
+                                                 callback_data=f'check_services {str(master_id)} reservation')
+    keyboard.add(callback_button)
     keyboard.add(types.InlineKeyboardButton(text="До головного меню🏠",
                                             callback_data='menu'))
+    if is_saved:
+        keyboard.add(types.InlineKeyboardButton(text="Видалити з улюблених 💔",
+                                                callback_data=f'remove_saved {master_id} {message_id}'))
     move_buttons = []
 
     if int(index) > 0:
@@ -777,7 +757,7 @@ def edit_profile_buttons(role):
         keyboard.add(callback_button)
 
     keyboard.add(types.InlineKeyboardButton(text="Головне меню 🏠",
-                                                 callback_data='menu'))
+                                            callback_data='menu'))
     return keyboard
 
 

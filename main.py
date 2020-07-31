@@ -408,7 +408,7 @@ def callback_handler(call):
         except Exception as ex:
             print(ex)
             reservation = None
-        keyboard = buttons.service_segments(data[1], False, reservation)
+        keyboard = buttons.service_segments(data[1], False, call.from_user.id, reservation)
         bot.send_message(call.from_user.id, 'Оберіть сегмент послуг 🧚🏻‍',
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
@@ -495,7 +495,7 @@ def callback_handler(call):
             logging.error(f'Could not get masters. Cause: {ex}. Time: {time.asctime()}')
             session.rollback()
             return
-        show_masters(0, 0, masters, call.from_user.id)
+        show_masters(0, 0, masters, call.from_user.id, True, call.message.message_id+1)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
     elif 'choose_service ' in call.data:
@@ -690,6 +690,23 @@ def callback_handler(call):
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
 
+    elif 'remove_saved' in call.data:
+        data = call.data.split(' ')
+        try:
+            bot.delete_message(call.from_user.id, int(data[2]))
+            delete_from_favorites(data[1], call.from_user.id)
+            keyboard = buttons.saved_masters(call.from_user.id)
+            if keyboard is None:
+                bot.delete_message(call.from_user.id, int(data[2])-1)
+            else:
+                bot.edit_message_reply_markup(call.from_user.id, int(data[2])-1, reply_markup=keyboard)
+        except Exception as ex:
+            logging.error(f'Callback handler: remove_saved. Cause: {ex}')
+            bot.answer_callback_query(call.id, text=" ", show_alert=False)
+            return
+        bot.answer_callback_query(call.id, text="Видалено(")
+        return
+
     elif 'edit_service' in call.data:
         data = call.data.split(' ')
         keyboard = buttons.edit_service(call.from_user.id, data[1])
@@ -736,7 +753,7 @@ def callback_handler(call):
             logging.error(f'Could not delete service. Cause: {ex}. Time: {time.asctime()}')
             bot.answer_callback_query(call.id, text="Виникла помилка!")
             return
-        keyboard = buttons.service_segments(call.from_user.id, False)
+        keyboard = buttons.service_segments(call.from_user.id, False, call.from_user.id)
         bot.send_message(call.from_user.id, 'Оберіть сегмент послуг 🧚🏻‍',
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
@@ -1195,7 +1212,7 @@ def set_working_days(call, again, option):
 
 
 def add_new_service(call, reg=False):
-    keyboard = buttons.service_segments(call.from_user.id, True, reg=reg)
+    keyboard = buttons.service_segments(call.from_user.id, True, call.from_user.id, reg=reg)
     bot.send_message(call.from_user.id,
                      'Оберіть сегмент послуг, що надаєте 🧚🏻‍♀',
                      reply_markup=keyboard)
@@ -1563,7 +1580,8 @@ def show_orders(orders, user_id, master_flag, call):
                              reply_markup=keyboard, parse_mode='markdown')
         else:
             date = calculations.get_date_by_day_number(day[0].day_num, order.next_week).strftime("%Y-%m-%d")
-            if not order.done:
+            if not order.done and not order.canceled_by_system \
+                    and not order.canceled_by_master and not order.canceled_by_client and master_flag:
                 keyboard.add(buttons.mark_as_canceled_by_master(order.id, call.message.message_id + counter))
             bot.send_message(user_id,
                              f'`Назва послуги:` {str(service[0].name)} \n'
@@ -1845,9 +1863,10 @@ def show_services(index, end_index, services, user_id):
                    parse_mode='markdown')
 
 
-def show_masters(index, end_index, masters, user_id):
+def show_masters(index, end_index, masters, user_id, is_saved=False, message_id=False):
     keyboard = buttons.moving_masters_buttons(index, end_index,
-                                              masters[int(index)].user_id, masters[int(index)].placement_id, user_id)
+                                              masters[int(index)].user_id,
+                                              masters[int(index)].placement_id, is_saved, message_id)
     try:
         img = open(data_path + masters[int(index)].user_id + '\\profile\\profile.jpg', 'rb')
     except Exception as ex:
@@ -1855,7 +1874,6 @@ def show_masters(index, end_index, masters, user_id):
         img = open(data_path + 'default.jpeg', 'rb')
     try:
         segments = get_segments_for_master(masters[int(index)].user_id)
-        print(segments)
     except Exception as ex:
         logging.error(f'Could not get master segments. Cause: {ex}. Time: {time.asctime()}')
         return
