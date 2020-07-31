@@ -1508,7 +1508,7 @@ def set_time_cost(message, service_id, segment, reg='1'):
 
     if reg == 'reg':
         keyboard = buttons.to_menu()
-        keyboard.add(buttons.add_more_button(segment))
+        keyboard.add(buttons.add_more_button())
         bot.send_message(message.chat.id, 'Процедуру додано 👍', reply_markup=keyboard)
     else:
         bot.send_message(message.from_user.id, 'Виконано!')
