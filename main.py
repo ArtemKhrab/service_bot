@@ -46,7 +46,7 @@ def start(message):
                      reply_markup=keyboard)
 
 
-@bot.message_handler(regexp='^(меню)$')
+@bot.message_handler(regexp='^(Головне меню)')
 def menu(message):
     bot.clear_step_handler_by_chat_id(message.from_user.id)
     try:
@@ -581,8 +581,8 @@ def callback_handler(call):
 
     elif 'mark_as_canceled_by_master' in call.data:
         data = call.data.split(' ')
+        bot.delete_message(call.from_user.id, data[2])
         try:
-
             update_order_as_canceled_by_master(data[1])
             order = get_order_by_id(data[1])
             master = get_master(order.master_id)
@@ -1555,6 +1555,7 @@ def show_orders(orders, user_id, master_flag, call):
         elif master_flag and not order.done:
             keyboard.add(buttons.mark_as_done(order.id, call.message.message_id + counter))
         start_time = order.time.split('-')
+
         if service.__len__() < 1:
             bot.send_message(user_id, f'`Перерва` \n'
                                       f'`Час:` {order.time}  \n'
@@ -1562,7 +1563,8 @@ def show_orders(orders, user_id, master_flag, call):
                              reply_markup=keyboard, parse_mode='markdown')
         else:
             date = calculations.get_date_by_day_number(day[0].day_num, order.next_week).strftime("%Y-%m-%d")
-            keyboard.add(buttons.mark_as_canceled_by_master(order.id, call.message.message_id + counter))
+            if not order.done:
+                keyboard.add(buttons.mark_as_canceled_by_master(order.id, call.message.message_id + counter))
             bot.send_message(user_id,
                              f'`Назва послуги:` {str(service[0].name)} \n'
                              f'`Початок о:` {start_time[0]}-{start_time[1]}  \n'

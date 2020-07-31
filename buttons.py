@@ -53,7 +53,7 @@ def choose_role_menu():
     callback_button = types.InlineKeyboardButton(text="💅🏻 Майстер",
                                                  callback_data='change_role 1')
     keyboard.add(callback_button)
-    callback_button = types.InlineKeyboardButton(text="🔄 Назад",
+    callback_button = types.InlineKeyboardButton(text="⬅ Повернутися",
                                                  callback_data='del_message')
     keyboard.add(callback_button)
     return keyboard
@@ -67,7 +67,7 @@ def choose_role_reg():
     callback_button = types.InlineKeyboardButton(text="💅🏻 Майстер",
                                                  callback_data='registration master')
     keyboard.add(callback_button)
-    callback_button = types.InlineKeyboardButton(text="🔄 Назад",
+    callback_button = types.InlineKeyboardButton(text="⬅ Повернутися",
                                                  callback_data='del_message')
     keyboard.add(callback_button)
     return keyboard
@@ -807,8 +807,7 @@ def working_days_buttons(working_days, option):
                                                 callback_data='set_working_days edit'))
         keyboard.add(types.InlineKeyboardButton(text="Додати робочий день",
                                                 callback_data='set_working_days add'))
-        keyboard.add(types.InlineKeyboardButton(text="Головне меню 🏠",
-                                                callback_data='menu'))
+        keyboard.add(back_and_delete())
         if text == '':
             text = 'Не додано жодного дня!'
         return [text, keyboard]
