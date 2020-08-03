@@ -686,7 +686,7 @@ def callback_handler(call):
         if data[1] == 'name':
             bot.send_message(call.from_user.id, "Введіть своє ім'я"
                                                 "(можна латиницею) і натисніть Enter ↩")
-            bot.register_next_step_handler(message=call.message, call_id=call.id, callback=edit_name, role=data[2])
+            bot.register_next_step_handler(message=call.message, callback=edit_name, role=data[2])
 
         elif data[1] == 'phone':
             bot.send_message(call.from_user.id, "Тепер надішліть свій телефон ☎️",
@@ -700,35 +700,26 @@ def callback_handler(call):
                 logging.error(f'Could not update username. Cause: {ex}. Time: {time.asctime()}')
                 session.rollback()
                 return
-            bot.answer_callback_query(call.id, text="Змінено")
-
-        # elif data[1] == 'card':
-        #     bot.send_message(call.from_user.id,
-        #                      'Напишіть номер картки, на яку '
-        #                      'будуть надходити кошти.\n\n'
-        #                      'Також рекомендую видалити його з чату 😉')
-        #     bot.register_next_step_handler(message=call.message, call_id=call.id, callback=edit_card)
 
         elif data[1] == 'placement':
             user_instance = get_master(call.from_user.id)
             data = buttons.set_placement_buttons(user_instance[0].city_id, '')
             bot.send_message(call.from_user.id, data[0],
                              reply_markup=data[1])
-            bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
         elif data[1] == 'edit_city':
             keyboard = buttons.city_buttons(data[2], '1')
             bot.send_message(call.from_user.id, "Оберіть Ваше місто🌆:", reply_markup=keyboard)
-            bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
         elif data[1] == 'details':
             bot.send_message(call.from_user.id, 'Напишіть опис до аккаунту, '
                                                 'що ви вмієте і тд.')
-            bot.register_next_step_handler(message=call.message, call_id=call.id, callback=edit_details)
+            bot.register_next_step_handler(message=call.message, callback=edit_details)
 
         elif data[1] == 'photo':
             bot.send_message(call.from_user.id, 'Відправте мені ваше фото')
             bot.register_next_step_handler(message=call.message, reg='', callback=set_acc_photo)
+
         elif data[1] == 'edit_email':
             bot.send_message(call.from_user.id, 'Вкажіть діючу пошту✉')
             bot.register_next_step_handler(call.message, set_email, data[2], None)
@@ -1481,7 +1472,7 @@ def master_reg_start(message, user_id):
     bot.register_next_step_handler(message=message, reg='reg', callback=set_acc_photo)
 
 
-def edit_name(message, call_id, role):
+def edit_name(message, role):
     try:
         update_name(message.from_user.id, message.text, role)
     except Exception as ex:
@@ -1489,7 +1480,6 @@ def edit_name(message, call_id, role):
         session.rollback()
         return
     edit_profile(message.from_user.id, role)
-    bot.answer_callback_query(call_id, text="Змінено")
 
 
 def edit_telephone(message, role):
@@ -1508,23 +1498,13 @@ def edit_telephone(message, role):
     edit_profile(message.from_user.id, role)
 
 
-# def edit_card(message, call_id):
-#     try:
-#         update_card(message.from_user.id, base64.standard_b64encode(message.text.encode('UTF-8')))
-#     except Exception as ex:
-#         logging.error(f'Could not update credit card num. Cause: {ex}. Time: {time.asctime()}')
-#         return
-#     edit_profile(message.from_user.id, 'master')
-#     bot.answer_callback_query(call_id, text="Змінено")
-
-
 def edit_profile(user_id, role):
     keyboard = buttons.edit_profile_buttons(role)
     bot.send_message(user_id, 'Оберіть, що хочете змінити🛠',
                      reply_markup=keyboard)
 
 
-def edit_details(message, call_id):
+def edit_details(message):
     try:
         update_acc_details(message.from_user.id, message.text)
     except Exception as ex:
@@ -1532,7 +1512,6 @@ def edit_details(message, call_id):
         session.rollback()
         return
     edit_profile(message.from_user.id, 'master')
-    bot.answer_callback_query(call_id, text="Змінено")
 
 
 def set_money_cost(message, service_id, segment, reg='1'):
