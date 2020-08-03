@@ -478,6 +478,11 @@ def get_available_days(master_id, current_day_num, next_week):
         return data
 
 
+def get_placement_by_id(placement_id):
+    instance = session.query(Placement).filter(Placement.id == placement_id).all()
+    return instance[0]
+
+
 def get_day_details(day_id, next_week='0'):
     day = session.query(Working_days).filter(Working_days.id == day_id).all()
     orders = session.query(Order).filter(Order.day_id == day[0].id, Order.canceled_by_system == '0',
@@ -527,16 +532,19 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
     session.flush()
     session.commit()
     master = get_master(master_id)
+    placement = get_placement_by_id(master[0].placement_id)
     day = get_day_details(day_id)
     try:
         g_event_id = \
             time_slots_managment.process_calendar_instance(title=service[0].name,
                                                            description=f'{service[0].name}. \n'
+                                                                       f'Назва салону: {placement.name} \n'
+                                                                       f'Адреса: {placement.address} \n\n'
                                                                        f'Ім`я майстра: {master[0].name} .\n'
                                                                        f'Телефон майстра: {master[0].telephone} \n\n'
-                                                                       f'Ім`я клієнта: {client[0].name}'
+                                                                       f'Ім`я клієнта: {client[0].name} \n'
                                                                        f'Телефон клієнта: '
-                                                                       f'{client[0].telephone} \n',
+                                                                       f'{client[0].telephone}',
                                                            start_end_time=
                                                            time_slot + f'-{str(service_time.strftime("%H-%M"))}',
                                                            day_num=day[0].day_num,
