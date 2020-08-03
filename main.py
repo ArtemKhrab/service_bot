@@ -11,8 +11,25 @@ import schedule
 from config import token
 from multiprocessing import Process
 
-schedule.every().day.at('02:00').do(daily_update)
-schedule.every().monday.at('02:00').do(weekly_update)
+
+try:
+    schedule.every().day.at('02:00').do(daily_update)
+except Exception as critical:
+    logging.critical(f'Could not execute daily update. Cause {critical}')
+    try:
+        schedule.every().day.at('03:00').do(daily_update)
+    except Exception as critical:
+        logging.critical(f'Could not execute daily update (second attempt). Cause {critical}')
+
+try:
+    schedule.every().monday.at('02:00').do(weekly_update)
+except Exception as critical:
+    logging.critical(f'Could not execute weekly update. Cause {critical}')
+    try:
+        schedule.every().day.at('03:00').do(daily_update)
+    except Exception as critical:
+        logging.critical(f'Could not execute daily update (second attempt). Cause {critical}')
+
 
 bot = telebot.TeleBot(token=token)
 data_path = os.curdir + '\\data\\'
@@ -52,7 +69,6 @@ def menu(message):
     try:
         flag = check_user(message.from_user.id)
     except Exception as ex:
-        session.rollback()
         logging.error(f'Could not check user. Cause: {ex}. Time: {time.asctime()}')
         return
     if not flag:
@@ -68,7 +84,6 @@ def callback_handler(call):
     try:
         flag = check_user(call.from_user.id)
     except Exception as ex:
-        session.rollback()
         logging.error(f'Could not check user. Cause: {ex}. Time: {time.asctime()}')
         return
 
@@ -121,7 +136,6 @@ def callback_handler(call):
             user_instance = get_user_role(call.from_user.id)
         except Exception as ex:
             logging.error(f'Could not get current role. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
             return
 
         if data[1] == '1':
@@ -198,10 +212,14 @@ def callback_handler(call):
         data = call.data.split(' ')
         try:
             update_city(call.from_user.id, data[1], data[2])
+        except Exception as ex:
+            logging.error(f'Could not set city. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
+            return
+        try:
             city = get_city_by_id(data[1])
         except Exception as ex:
-            logging.error(f'Could not set or get city. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
+            logging.error(f'Could not get city. Cause: {ex}. Time: {time.asctime()}')
             return
         bot.send_message(call.from_user.id, f'Ви обрали місто: {city}🌆')
 
@@ -231,7 +249,6 @@ def callback_handler(call):
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
         except Exception as ex:
             logging.error(f'Could not show profile. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
             return
         return
 
@@ -261,7 +278,6 @@ def callback_handler(call):
             show_certificates(index, end_index, certificates, call.from_user.id)
         except Exception as ex:
             logging.error(f'Could not show certificates. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
             return
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
@@ -273,7 +289,6 @@ def callback_handler(call):
             show_certificates(indexes[1], indexes[2], certificates, call.from_user.id)
         except Exception as ex:
             logging.error(f'Could not show certificates. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
             return
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
@@ -292,7 +307,6 @@ def callback_handler(call):
             show_services(index, end_index, services, call.from_user.id)
         except Exception as ex:
             logging.error(f'Could not show services. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
             return
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
@@ -304,7 +318,6 @@ def callback_handler(call):
             show_services(indexes[1], indexes[2], services, call.from_user.id)
         except Exception as ex:
             logging.error(f'Could not show services. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
             return
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
@@ -326,7 +339,6 @@ def callback_handler(call):
 
         except Exception as ex:
             logging.error(f'Could not get user instance. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
             return
         keyboard = buttons.order_placement_buttons(user_instance[0].city_id)
         bot.send_message(call.from_user.id, keyboard[0],
@@ -339,7 +351,6 @@ def callback_handler(call):
             masters = get_masters(data[1])
         except Exception as ex:
             logging.error(f'Could not get masters. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
             return
         end_index = masters.__len__() - 1
 
@@ -380,7 +391,6 @@ def callback_handler(call):
                 flag = check_saved_masters(master_id=data[1], user_id=call.from_user.id)
             except Exception as ex:
                 logging.error(f'Could not check saved masters. Cause: {ex}. Time: {time.asctime()}')
-                session.rollback()
                 return
             if flag:
                 save_master(master_id=data[1], user_id=call.from_user.id)
@@ -431,7 +441,6 @@ def callback_handler(call):
             return
 
         if (str(call.from_user.id) is str(data[2])) and (data[3] != 'reservation'):
-            print(keyboard[1])
             segment_text = 'Уточніть процедуру 🗂' if keyboard[1] is not None else \
                 'Послуги для цієї категорії не визначені. ' \
                 'Зверніться до адміністратора для того, щоб додати список послуг'
@@ -455,7 +464,6 @@ def callback_handler(call):
             services_name = get_service_names(call.from_user.id, data[1])
         except Exception as ex:
             logging.error(f'Could not get service names. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
             return
         keyboard = buttons.service_buttons(data[1], services_name)
         segment_text = 'Уточніть процедуру 🗂' if keyboard[1] else \
@@ -537,7 +545,6 @@ def callback_handler(call):
             orders = get_orders_for_client(call.from_user.id, data[1])
         except Exception as ex:
             logging.error(f'Could not get orders for client. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
             return
         if orders.__len__() < 1:
             bot.answer_callback_query(call.id, text="Замовлення не знайдені")
@@ -555,7 +562,6 @@ def callback_handler(call):
             orders = get_orders_for_master(call.from_user.id, data[1])
         except Exception as ex:
             logging.error(f'Could not get orders for master. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
             return
         if orders.__len__() < 1:
             bot.answer_callback_query(call.id, text="Замовлення не знайдені")
@@ -571,6 +577,9 @@ def callback_handler(call):
         data = call.data.split(' ')
         try:
             bot.delete_message(call.from_user.id, int(data[2]))
+        except Exception as ex:
+            print(ex)
+        try:
             update_order_as_done(data[1])
         except Exception as ex:
             logging.error(f'Could not update order as completed. Cause: {ex}. Time: {time.asctime()}')
@@ -584,13 +593,17 @@ def callback_handler(call):
         bot.delete_message(call.from_user.id, data[2])
         try:
             update_order_as_canceled_by_master(data[1])
+        except Exception as ex:
+            logging.error(f'Could not update order as canceled by master. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
+            return
+        try:
             order = get_order_by_id(data[1])
             master = get_master(order.master_id)
             service = get_service_by_id(order.service_id)
         except Exception as ex:
             print(ex)
-            logging.error(f'Could not update order as canceled by master. Cause: {ex}. Time: {time.asctime()}')
-            session.rollback()
+            logging.error(f'Could not get order, master, service data. Cause: {ex}. Time: {time.asctime()}')
             return
         start_time = order.time.split('-')
         prepaid = 'Так' if order.prepaid else 'Ні'
@@ -657,12 +670,12 @@ def callback_handler(call):
                 return
             bot.answer_callback_query(call.id, text="Змінено")
 
-        elif data[1] == 'card':
-            bot.send_message(call.from_user.id,
-                             'Напишіть номер картки, на яку '
-                             'будуть надходити кошти.\n\n'
-                             'Також рекомендую видалити його з чату 😉')
-            bot.register_next_step_handler(message=call.message, call_id=call.id, callback=edit_card)
+        # elif data[1] == 'card':
+        #     bot.send_message(call.from_user.id,
+        #                      'Напишіть номер картки, на яку '
+        #                      'будуть надходити кошти.\n\n'
+        #                      'Також рекомендую видалити його з чату 😉')
+        #     bot.register_next_step_handler(message=call.message, call_id=call.id, callback=edit_card)
 
         elif data[1] == 'placement':
             user_instance = get_master(call.from_user.id)
@@ -693,8 +706,13 @@ def callback_handler(call):
     elif 'remove_saved' in call.data:
         data = call.data.split(' ')
         try:
-            bot.delete_message(call.from_user.id, int(data[2]))
             delete_from_favorites(data[1], call.from_user.id)
+        except Exception as ex:
+            logging.error(f'Could not delete master from favorites. Cause {ex}')
+            session.rollback()
+            return
+        try:
+            bot.delete_message(call.from_user.id, int(data[2]))
             keyboard = buttons.saved_masters(call.from_user.id)
             if keyboard is None:
                 bot.delete_message(call.from_user.id, int(data[2])-1)
@@ -751,6 +769,7 @@ def callback_handler(call):
             delete_service(data[1])
         except Exception as ex:
             logging.error(f'Could not delete service. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
             bot.answer_callback_query(call.id, text="Виникла помилка!")
             return
         keyboard = buttons.service_segments(call.from_user.id, False, call.from_user.id)
@@ -791,6 +810,7 @@ def callback_handler(call):
             delete_sample_service(data[1])
         except Exception as ex:
             logging.error(f'Could not delete sample service. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
             bot.answer_callback_query(call.id, text="Виникла помилка!")
             return
         services = get_sample_services(call.from_user.id)
@@ -842,6 +862,7 @@ def callback_handler(call):
             delete_certificate(data[1])
         except Exception as ex:
             logging.error(f'Could not delete certificate. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
             bot.answer_callback_query(call.id, text="Виникла помилка!")
             return
         certificates = get_certificates(call.from_user.id)
@@ -1017,7 +1038,6 @@ def callback_handler(call):
             return
 
         response = calculations.check_available_time(day_det, service_det)
-        print(response)
         if response[0] is None:
             bot.send_message(call.from_user.id, response[1])
             return
@@ -1068,6 +1088,7 @@ def take_brake(message, call):
             create_order(call.from_user.id, call.from_user.id, day_det[0].id, message.text, None, '0', True)
         except Exception as ex:
             logging.error(f'Could not create free time slot. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
             return
         bot.send_message(call.from_user.id, 'Вільний таймслот створено!')
         to_menu(call.from_user.id)
@@ -1076,11 +1097,7 @@ def take_brake(message, call):
 
 def order_creation(master_id, service_id, day_id, time_slot, next_week, call):
     bot.send_message(call.from_user.id, 'Предоплата и тд...')
-    # try:
     create_order(master_id, call.from_user.id, day_id, time_slot, service_id, next_week)
-    # except Exception as ex:
-    #     logging.error(f"Could not create order instance. Cause: {ex}. Time: {time.asctime()}")
-    #     return
     bot.send_message(call.from_user.id, f"Заявка створена!")
     to_menu(call.from_user.id)
 
@@ -1171,6 +1188,7 @@ def set_working_time(message, call):
         update_working_time(message.from_user.id, message.text)
     except Exception as ex:
         logging.error(f'Could not set working time. Cause: {ex}, Time: {time.asctime()}')
+        session.rollback()
         return
     bot.send_message(call.from_user.id, 'Час виставлено!⏱')
     to_menu(call.from_user.id)
@@ -1230,6 +1248,7 @@ def set_feedback(message, user_id, master_id, call):
             create_feedback(master_id, user_id, message.text)
         except Exception as ex:
             logging.error(f'Could not create feedback. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
             return
 
     bot.send_message(call.from_user.id, 'Дякую за вігук ☺', reply_markup=keyboard)
@@ -1274,6 +1293,7 @@ def edit_certificate_description(message, certificate_id):
         update_certificate_description(certificate_id, message.text)
     except Exception as ex:
         logging.error(f'Could not update certificate description. Cause: {ex}. Time: {time.asctime()}')
+        session.rollback()
         edit_certificate(certificate_id, message.from_user.id)
         return
     edit_certificate(certificate_id, message.from_user.id)
@@ -1302,6 +1322,7 @@ def edit_certificate_photo(message, certificate_id):
     try:
         update_certificate_photo(message, ran, False, photo)
     except Exception as ex:
+        session.rollback()
         logging.error(f'Could not update certificate photo. Cause: {ex}. Time: {time.asctime()}')
         return
     edit_certificate(certificate_id, message.from_user.id)
@@ -1321,6 +1342,7 @@ def update_certificate_photo(message, ran, create, photo):
             create_certificate(message.from_user.id, image)
         except Exception as ex:
             logging.error(f'Could not create certificate. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
             return
         return image
     else:
@@ -1378,6 +1400,7 @@ def edit_sample_service_photo(message, service_id):
         update_samp_serv_photo(message, service_id, ran, photo)
     except Exception as ex:
         logging.error(f'Could not update sample service photo. Cause: {ex}. Time: {time.asctime()}')
+        session.rollback()
         return
     edit_sample_service(service_id, message.from_user.id)
 
@@ -1394,6 +1417,7 @@ def update_samp_serv_photo(message, service_id, ran, photo):
         update_service_photo(message.from_user.id, service_id, image)
     except Exception as ex:
         logging.error(f'Could not update service photo. Cause: {ex}. Time: {time.asctime()}')
+        session.rollback()
         return
 
 
@@ -1407,6 +1431,7 @@ def edit_sample_service_name(message, service_id):
         update_sample_service_name(service_id, message.text)
     except Exception as ex:
         logging.error(f'Could not update sample service name. Cause: {ex}. Time: {time.asctime()}')
+        session.rollback()
         edit_sample_service(service_id, message.from_user.id)
         return
     edit_sample_service(service_id, message.from_user.id)
@@ -1429,6 +1454,7 @@ def edit_name(message, call_id, role):
         update_name(message.from_user.id, message.text, role)
     except Exception as ex:
         logging.error(f'Could not update name. Cause: {ex}. Time: {time.asctime()}')
+        session.rollback()
         return
     edit_profile(message.from_user.id, role)
     bot.answer_callback_query(call_id, text="Змінено")
@@ -1443,20 +1469,21 @@ def edit_telephone(message, role):
 
     except Exception as ex:
         logging.error(f'Could not update telephone. Cause: {ex}. Input: {message.text}. Time: {time.asctime()}')
+        session.rollback()
         return
     bot.send_message(message.from_user.id, 'Змінено!', reply_markup=buttons.del_button())
     bot.send_message(message.from_user.id, "Повертаю вашу кнопочку 'меню'", reply_markup=buttons.keyboard_menu_button())
     edit_profile(message.from_user.id, role)
 
 
-def edit_card(message, call_id):
-    try:
-        update_card(message.from_user.id, base64.standard_b64encode(message.text.encode('UTF-8')))
-    except Exception as ex:
-        logging.error(f'Could not update credit card num. Cause: {ex}. Time: {time.asctime()}')
-        return
-    edit_profile(message.from_user.id, 'master')
-    bot.answer_callback_query(call_id, text="Змінено")
+# def edit_card(message, call_id):
+#     try:
+#         update_card(message.from_user.id, base64.standard_b64encode(message.text.encode('UTF-8')))
+#     except Exception as ex:
+#         logging.error(f'Could not update credit card num. Cause: {ex}. Time: {time.asctime()}')
+#         return
+#     edit_profile(message.from_user.id, 'master')
+#     bot.answer_callback_query(call_id, text="Змінено")
 
 
 def edit_profile(user_id, role):
@@ -1470,6 +1497,7 @@ def edit_details(message, call_id):
         update_acc_details(message.from_user.id, message.text)
     except Exception as ex:
         logging.error(f'Could not update account details. Cause: {ex}. Input: {message.text}. Time: {time.asctime()}')
+        session.rollback()
         return
     edit_profile(message.from_user.id, 'master')
     bot.answer_callback_query(call_id, text="Змінено")
@@ -1485,6 +1513,7 @@ def set_money_cost(message, service_id, segment, reg='1'):
         update_service_cost(service_id, message.text)
     except Exception as ex:
         logging.error(f'Could not update service cost. Cause: {ex}. Input: {message.text}. Time: {time.asctime()}')
+        session.rollback()
         return
 
     if reg == 'reg':
@@ -1509,6 +1538,7 @@ def set_email(message, role, reg):
             update_email(message.from_user.id, message.text, role)
         except Exception as ex:
             logging.error(f'Could not set mail. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
             return
         if reg == 'reg':
             keyboard = buttons.city_buttons(role, reg)
@@ -1528,6 +1558,7 @@ def set_time_cost(message, service_id, segment, reg='1'):
         update_service_time_cost(service_id, message.text)
     except Exception as ex:
         logging.error(f'Could not update service time cost. Cause: {ex}. Input: {message.text}. Time: {time.asctime()}')
+        session.rollback()
         return
 
     if reg == 'reg':
@@ -1554,6 +1585,7 @@ def show_orders(orders, user_id, master_flag, call):
 
         except Exception as ex:
             logging.error(f'Could not get data. Func: show_orders. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
             return
         prepaid = 'Так' if order.prepaid else 'Ні'
         if not master_flag:
@@ -1634,6 +1666,7 @@ def set_telephone(message, role):
 
     except Exception as ex:
         logging.error(f'Could not set telephone. Cause: {ex}. Time: {time.asctime()}')
+        session.rollback()
         return
     bot.send_message(message.from_user.id, 'Вкажіть діючу пошту✉',
                      reply_markup=buttons.del_button())
@@ -1657,6 +1690,7 @@ def set_acc_photo(message, reg):
         update_acc_photo(message.from_user.id)
     except Exception as ex:
         logging.error(f'Could not set acc photo (Line: 1067). Cause: {ex}. Time: {time.asctime()}')
+        session.rollback()
         return
 
     if reg == 'reg':
@@ -1676,6 +1710,7 @@ def set_card(message):
         update_card(message.from_user.id, base64.standard_b64encode(message.text.encode('UTF-8')))
     except Exception as ex:
         logging.error(f'Could not set credit card. Cause: {ex}. Time: {time.asctime()}')
+        session.rollback()
         return
     bot.send_message(message.from_user.id,
                      'Напишіть опис до аккаунту, що ви вмієте і тд.')
@@ -1687,6 +1722,7 @@ def set_acc_details(message):
         update_acc_details(message.from_user.id, message.text)
     except Exception as ex:
         logging.error(f'Could not update account details. Cause: {ex}. Input: {message.text}. Time: {time.asctime()}')
+        session.rollback()
         return
     user_instance = get_master(message.from_user.id)
     data = buttons.set_placement_buttons(user_instance[0].city_id, 'reg')
@@ -1761,6 +1797,7 @@ def set_certificate_photo(message):
         image = update_certificate_photo(message, ran, True, photo)
     except Exception as ex:
         logging.error(f'Could not update certificate photo. Cause: {ex}. Time: {time.asctime()}')
+        session.rollback()
         return
     bot.send_message(message.chat.id, 'Напишіть опис до фото:')
     bot.register_next_step_handler(message=message, image=image, callback=set_certificate_details)
@@ -1771,6 +1808,7 @@ def set_certificate_details(message, image):
         update_certificate_details(message.from_user.id, image, message.text)
     except Exception as ex:
         logging.error(f'Could not set certificate. Cause: {ex}. Time: {time.asctime()}')
+        session.rollback()
         return
     keyboard = buttons.to_menu()
     bot.send_message(message.from_user.id, 'Додано!', reply_markup=keyboard)
@@ -1828,6 +1866,7 @@ def set_service_photo(message, service_id):
         update_samp_serv_photo(message, service_id, ran, photo)
     except Exception as ex:
         logging.error(f'Could not update service photo. Cause: {ex}. Time: {time.asctime()}')
+        session.rollback()
         return
 
     keyboard = buttons.to_menu()
@@ -1911,6 +1950,7 @@ def start_schedule():
 
 
 def start_bot():
+    logging.basicConfig(filename='.log')
     try:
         check_start_up_data()
         bot.polling(none_stop=True)
@@ -1919,7 +1959,6 @@ def start_bot():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='logs.log')
     schedule_process = Process(target=start_schedule)
     schedule_process.start()
     bot_process = Process(target=start_bot)

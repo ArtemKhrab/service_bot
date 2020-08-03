@@ -529,16 +529,17 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
     master = get_master(master_id)
     day = get_day_details(day_id)
     try:
-        g_event_id = time_slots_managment.process_calendar_instance(title=service[0].name,
-                                                                    description=f'{service[0].name}. \n'
-                                                                                f'Майстер: {master[0].name} .\n'
-                                                                                f'Телефон клієнта: '
-                                                                                f'{client[0].telephone} \n',
-                                                                    start_end_time=
-                                                                    time_slot + f'-{str(service_time.strftime("%H-%M"))}',
-                                                                    day_num=day[0].day_num,
-                                                                    master_email=master[0].email,
-                                                                    next_week=next_week)
+        g_event_id = \
+            time_slots_managment.process_calendar_instance(title=service[0].name,
+                                                           description=f'{service[0].name}. \n'
+                                                                       f'Майстер: {master[0].name} .\n'
+                                                                       f'Телефон клієнта: '
+                                                                       f'{client[0].telephone} \n',
+                                                           start_end_time=
+                                                           time_slot + f'-{str(service_time.strftime("%H-%M"))}',
+                                                           day_num=day[0].day_num,
+                                                           master_email=master[0].email,
+                                                           next_week=next_week)
     except Exception as ex:
         print(ex)
         return
