@@ -11,7 +11,6 @@ import schedule
 from config import token
 from multiprocessing import Process
 
-
 try:
     schedule.every().day.at('02:00').do(daily_update)
 except Exception as critical:
@@ -29,7 +28,6 @@ except Exception as critical:
         schedule.every().day.at('03:00').do(daily_update)
     except Exception as critical:
         logging.critical(f'Could not execute daily update (second attempt). Cause {critical}')
-
 
 bot = telebot.TeleBot(token=token)
 data_path = os.curdir + '\\data\\'
@@ -503,7 +501,7 @@ def callback_handler(call):
             logging.error(f'Could not get masters. Cause: {ex}. Time: {time.asctime()}')
             session.rollback()
             return
-        show_masters(0, 0, masters, call.from_user.id, True, call.message.message_id+1)
+        show_masters(0, 0, masters, call.from_user.id, True, call.message.message_id + 1)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
     elif 'choose_service ' in call.data:
@@ -590,15 +588,17 @@ def callback_handler(call):
 
     elif 'mark_as_canceled_by_master' in call.data:
         data = call.data.split(' ')
-        bot.delete_message(call.from_user.id, data[2])
         try:
-            update_order_as_canceled_by_master(data[1])
+            bot.delete_message(call.from_user.id, data[2])
+        except Exception as ex:
+            print(ex)
+        try:
+            order = update_order_as_canceled_by_master(data[1])
         except Exception as ex:
             logging.error(f'Could not update order as canceled by master. Cause: {ex}. Time: {time.asctime()}')
             session.rollback()
             return
         try:
-            order = get_order_by_id(data[1])
             master = get_master(order.master_id)
             service = get_service_by_id(order.service_id)
         except Exception as ex:
@@ -608,7 +608,7 @@ def callback_handler(call):
         start_time = order.time.split('-')
         prepaid = 'Так' if order.prepaid else 'Ні'
         if order.client_id is None:
-            if order.client_id_master_acc == call.from_user.id:
+            if order.client_id_master_acc == str(call.from_user.id):
                 pass
             else:
                 bot.send_message(order.client_id_master_acc, f'Ваше бронювання було відмінено майстром '
@@ -622,10 +622,10 @@ def callback_handler(call):
                                                              f"***Якщо процедура передплачена, зверніться ---, щоб "
                                                              f"вам повернули кошти")
         else:
-            if order.client_id == call.from_user.id:
+            if order.client_id == str(call.from_user.id):
                 pass
             else:
-                bot.send_message(order.client_id, f'Ваша бронь була відмінена майстром '
+                bot.send_message(order.client_id, f'Ваше бронювання була відмінена майстром '
                                                   f'{time.localtime().tm_hour}:{time.localtime().tm_min} '
                                                   f'{time.localtime().tm_mon}.{time.localtime().tm_mday} \n'
                                                   f"Ім'я майстра: {master[0].name} \n"
@@ -635,6 +635,38 @@ def callback_handler(call):
                                                   f"Передплачено: {prepaid} \n\n\n"
                                                   f"***Якщо процедура передплачена, зверніться ---, щоб "
                                                   f"вам повернули кошти")
+        bot.answer_callback_query(call.id, text="Відхилено!")
+
+    elif 'mark_as_canceled_by_client' in call.data:
+        data = call.data.split(' ')
+        try:
+            bot.delete_message(call.from_user.id, data[2])
+        except Exception as ex:
+            print(ex)
+
+        try:
+            order = update_order_as_canceled_by_client(data[1])
+        except Exception as ex:
+            logging.error(f'Could not update order as canceled by master. Cause: {ex}. Time: {time.asctime()}')
+            session.rollback()
+            return
+
+        prepaid = 'Так' if order.prepaid else 'Ні'
+
+        if order.master_id == str(call.from_user.id):
+            pass
+        else:
+            bot.send_message(order.master_id, f'Замовлення №{order.id} було відмінене клієнтом \n'
+                                              f'Передплачено: {prepaid}')
+            if order.prepaid:
+                if order.client_id is None:
+                    bot.send_message(order.client_id_master_acc, 'У Вас була здійснена передплата.'
+                                                                 'Зверніться, будь ласка, до адміністратора, '
+                                                                 f'щоб повернути гроші. Номер замовлення № {order.id}')
+                else:
+                    bot.send_message(order.client_id, 'У Вас була здійснена передплата.'
+                                                      'Зверніться, будь ласка, до адміністратора, '
+                                                      f'щоб повернути гроші. Номер замовлення № {order.id}')
         bot.answer_callback_query(call.id, text="Відхилено!")
 
     elif call.data == 'pre_check_order':
@@ -715,9 +747,9 @@ def callback_handler(call):
             bot.delete_message(call.from_user.id, int(data[2]))
             keyboard = buttons.saved_masters(call.from_user.id)
             if keyboard is None:
-                bot.delete_message(call.from_user.id, int(data[2])-1)
+                bot.delete_message(call.from_user.id, int(data[2]) - 1)
             else:
-                bot.edit_message_reply_markup(call.from_user.id, int(data[2])-1, reply_markup=keyboard)
+                bot.edit_message_reply_markup(call.from_user.id, int(data[2]) - 1, reply_markup=keyboard)
         except Exception as ex:
             logging.error(f'Callback handler: remove_saved. Cause: {ex}')
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
@@ -1615,6 +1647,16 @@ def show_orders(orders, user_id, master_flag, call):
             if not order.done and not order.canceled_by_system \
                     and not order.canceled_by_master and not order.canceled_by_client and master_flag:
                 keyboard.add(buttons.mark_as_canceled_by_master(order.id, call.message.message_id + counter))
+            if not order.done and not order.canceled_by_system \
+                    and not order.canceled_by_master and not order.canceled_by_client and not master_flag:
+                keyboard.add(buttons.mark_as_canceled_by_client(order.id, call.message.message_id + counter))
+            canceled = ''
+            if order.canceled_by_system:
+                canceled = '\n\nВідхилено системою. \n'
+            elif order.canceled_by_master:
+                canceled = '\n\nВідхилено майстром. \n'
+            elif order.canceled_by_client:
+                canceled = '\n\nВідхилено клієнтом. \n'
             bot.send_message(user_id,
                              f'`Назва послуги:` {str(service[0].name)} \n'
                              f'`Початок о:` {start_time[0]}-{start_time[1]}  \n'
@@ -1624,7 +1666,7 @@ def show_orders(orders, user_id, master_flag, call):
                              f"`Телефон майстра:` {str(master[0].telephone)} \n"
                              f"`Ім'я клієнта:` {str(client[0].name)} \n"
                              f"`Телефон клієнта:` {str(client[0].telephone)} \n"
-                             f"`Передплачено: ` {str(prepaid)} \n",
+                             f"`Передплачено: ` {str(prepaid)}{canceled}",
                              reply_markup=keyboard, parse_mode='markdown')
         counter += 1
     bot.send_message(user_id, 'Повернутись у меню', reply_markup=buttons.to_menu())
@@ -1754,8 +1796,8 @@ def show_profile(user_id, role):
                                f"Пошта: "
                                f"{'Н/Д' if instance[0].email is None else instance[0].email} \n\n"
                                f"Посилання в телеграмі: @{instance[0].username} \n\n"
-                               # f"Номер картки: *"
-                               # f"{'Н/Д' if instance[0].card is None else (base64.standard_b64decode(instance[0].card)).decode('UTF-8')[-4:]} \n\n "
+                       # f"Номер картки: *"
+                       # f"{'Н/Д' if instance[0].card is None else (base64.standard_b64decode(instance[0].card)).decode('UTF-8')[-4:]} \n\n "
                                f"Назва салону: {instance[2]} \n\n"
                                f"Місто: "
                                f"{'Н/Д' if instance[3] is None else instance[3]} \n\n"
@@ -1816,7 +1858,7 @@ def set_certificate_details(message, image):
 
 def get_photo(message):
     quantity = message.photo.__len__()
-    raw = message.photo[quantity-1].file_id
+    raw = message.photo[quantity - 1].file_id
     file_info = bot.get_file(raw)
     return bot.download_file(file_info.file_path)
 

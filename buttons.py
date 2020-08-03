@@ -116,6 +116,7 @@ def client_settings():
     callback_button = types.InlineKeyboardButton(text="Змінити роль 👤",
                                                  callback_data='choose role menu')
     keyboard.add(callback_button)
+    keyboard.add(back_and_delete())
     return keyboard
 
 
@@ -685,6 +686,11 @@ def mark_as_done(order_id, message_id):
 def mark_as_canceled_by_master(order_id, message_id):
     return types.InlineKeyboardButton(text="Відхилити запис",
                                       callback_data=f'mark_as_canceled_by_master {order_id} {message_id}')
+
+
+def mark_as_canceled_by_client(order_id, message_id):
+    return types.InlineKeyboardButton(text="Відхилити запис",
+                                      callback_data=f'mark_as_canceled_by_client {order_id} {message_id}')
 
 
 def empty_template():

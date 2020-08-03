@@ -254,6 +254,16 @@ def update_order_as_canceled_by_master(order_id):
     session.commit()
     order = session.query(Order).filter(Order.id == order_id).all()
     time_slots_managment.process_calendar_instance(delete=True, calendar_instance_id=order[0].g_calendar_id)
+    return order[0]
+
+
+def update_order_as_canceled_by_client(order_id):
+    session.query(Order).filter(Order.id == order_id). \
+        update({Order.canceled_by_client: True}, synchronize_session=False)
+    session.commit()
+    order = session.query(Order).filter(Order.id == order_id).all()
+    time_slots_managment.process_calendar_instance(delete=True, calendar_instance_id=order[0].g_calendar_id)
+    return order[0]
 
 
 def check_rating(user_id, master_id):
@@ -540,7 +550,7 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
                                                            description=f'{service[0].name}. \n'
                                                                        f'Назва салону: {placement.name} \n'
                                                                        f'Адреса: {placement.address} \n\n'
-                                                                       f'Ім`я майстра: {master[0].name} .\n'
+                                                                       f'Ім`я майстра: {master[0].name} \n'
                                                                        f'Телефон майстра: {master[0].telephone} \n\n'
                                                                        f'Ім`я клієнта: {client[0].name} \n'
                                                                        f'Телефон клієнта: '
