@@ -7,7 +7,7 @@ from config import utc
 
 
 def process_calendar_instance(title=None, description=None, start_end_time=None, day_num=None, master_email=None,
-                              next_week=None, delete=None, calendar_instance_id=None):
+                              client_email=None, next_week=None, delete=None, calendar_instance_id=None):
     try:
         import argparse
         flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
@@ -41,6 +41,7 @@ def process_calendar_instance(title=None, description=None, start_end_time=None,
             },
             'attendees': [
                 {'email': f'{master_email}'},
+                {'email': f'{client_email}'},
             ],
             # 'colorId': f'{random.randint(0,11)}',
         }

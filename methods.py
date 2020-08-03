@@ -532,19 +532,22 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
         g_event_id = \
             time_slots_managment.process_calendar_instance(title=service[0].name,
                                                            description=f'{service[0].name}. \n'
-                                                                       f'Майстер: {master[0].name} .\n'
+                                                                       f'Ім`я майстра: {master[0].name} .\n'
+                                                                       f'Телефон майстра: {master[0].telephone} \n\n'
+                                                                       f'Ім`я клієнта: {client[0].name}'
                                                                        f'Телефон клієнта: '
                                                                        f'{client[0].telephone} \n',
                                                            start_end_time=
                                                            time_slot + f'-{str(service_time.strftime("%H-%M"))}',
                                                            day_num=day[0].day_num,
                                                            master_email=master[0].email,
-                                                           next_week=next_week)
+                                                           next_week=next_week,
+                                                           client_email=client[0].email)
     except Exception as ex:
         print(ex)
         return
-    session.query(Order).filter(Order.id == instance.id). \
-        update({Order.g_calendar_id: g_event_id}, synchronize_session=False)
+    session.query(Order).filter(Order.id == instance.id).update({Order.g_calendar_id: g_event_id},
+                                                                synchronize_session=False)
     session.commit()
 
 
