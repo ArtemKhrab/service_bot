@@ -10,7 +10,7 @@ import calculations
 import schedule
 from config import token
 from multiprocessing import Process
-import sys
+# import sys
 
 
 # sys.tracebacklimit = 0
@@ -28,6 +28,11 @@ try:
 except Exception as critical:
     logging.critical(f'Could not execute weekly update. Cause {critical}')
     bot.send_message(405423146, f'Не удалось выполнить дейли апдейт... {critical}')
+
+
+@bot.message_handler(commands=['admin'])
+def show_admin_contacts(message):
+    bot.send_message(message.from_user.id, 'писатель энтого бота - @fjskdb')
 
 
 @bot.message_handler(commands=['start'])
@@ -574,12 +579,18 @@ def callback_handler(call):
         except Exception as ex:
             print(ex)
         try:
-            update_order_as_done(data[1])
+            order = update_order_as_done(data[1])
         except Exception as ex:
             logging.error(f'Could not update order as completed. Cause: {ex}. Time: {time.asctime()}')
             session.rollback()
             return
-
+        if str(call.from_user.id) != order.client_id_master_acc and str(call.from_user.id) != order.client_id:
+            service = get_service_by_id(order.service_id)
+            bot.send_message(int(order.client_id) if order.client_id is not None else int(order.client_id_master_acc),
+                             f'Ваше замовленя №{order.id} {service[0].name} було відмічено майстром як виконане. Ви можете '
+                             'оцінити якість роботи майстра у розділі Мої записи -> Виконані замовлення.\n\nЯкщо ви не '
+                             'отримали цю послугу, напишіть, будь ласка, адміністрітору. Щоб отримати контактні дані '
+                             'адміністратора, скористуйтеся /admin')
         bot.answer_callback_query(call.id, text="Відмічено!")
 
     elif 'mark_as_canceled_by_master' in call.data:
@@ -1614,8 +1625,8 @@ def show_orders(orders, user_id, master_flag, call):
                 if check_rating(user_id, order.master_id) and order.done:
                     keyboard.add(buttons.rating_button(order.master_id))
 
-                if check_feedback(user_id, order.master_id) and order.done:
-                    keyboard.add(buttons.feedback_button(order.master_id))
+                # if check_feedback(user_id, order.master_id) and order.done:
+                #     keyboard.add(buttons.feedback_button(order.master_id))
 
             except Exception as ex:
                 logging.error(f'Could not check rating or feedback. Cause: {ex}. Time: {time.asctime()}')

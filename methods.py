@@ -246,6 +246,9 @@ def update_order_as_done(order_id):
     session.query(Order).filter(Order.id == order_id). \
         update({Order.done: True}, synchronize_session=False)
     session.commit()
+    order = session.query(Order).filter(Order.id == order_id).all()
+    time_slots_managment.process_calendar_instance(delete=True, calendar_instance_id=order[0].g_calendar_id)
+    return order[0]
 
 
 def update_order_as_canceled_by_master(order_id):
