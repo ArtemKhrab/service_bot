@@ -587,10 +587,10 @@ def callback_handler(call):
         if str(call.from_user.id) != order.client_id_master_acc and str(call.from_user.id) != order.client_id:
             service = get_service_by_id(order.service_id)
             bot.send_message(int(order.client_id) if order.client_id is not None else int(order.client_id_master_acc),
-                             f'Ваше замовленя №{order.id} {service[0].name} було відмічено майстром як виконане. Ви можете '
-                             'оцінити якість роботи майстра у розділі Мої записи -> Виконані замовлення.\n\nЯкщо ви не '
-                             'отримали цю послугу, напишіть, будь ласка, адміністрітору. Щоб отримати контактні дані '
-                             'адміністратора, скористуйтеся /admin')
+                             f'Ваше замовленя №{order.id} - {service[0].name}, було відмічено майстром як виконане. Ви '
+                             'можете оцінити якість роботи майстра у розділі Мої записи -> Виконані замовлення.\n\nЯкщо'
+                             ' ви не отримали цю послугу, напишіть, будь ласка, адміністрітору. Щоб отримати контактні '
+                             'дані адміністратора, скористуйтеся /admin')
         bot.answer_callback_query(call.id, text="Відмічено!")
 
     elif 'mark_as_canceled_by_master' in call.data:
