@@ -1626,10 +1626,10 @@ def show_orders(orders, user_id, master_flag, call):
         start_time = order.time.split('-')
 
         if service.__len__() < 1:
-            bot.send_message(user_id, f'`Перерва` \n'
-                                      f'`Час:` {order.time}  \n'
-                                      f'`День тижня:` {day[0].day_name} \n',
-                             reply_markup=keyboard, parse_mode='markdown')
+            bot.send_message(user_id, f'Перерва \n'
+                                      f'Час: {order.time}  \n'
+                                      f'День тижня: {day[0].day_name} \n',
+                             reply_markup=keyboard)
         else:
             date = calculations.get_date_by_day_number(day[0].day_num, order.next_week).strftime("%Y-%m-%d")
             if not order.done and not order.canceled_by_system \
@@ -1639,23 +1639,38 @@ def show_orders(orders, user_id, master_flag, call):
                     and not order.canceled_by_master and not order.canceled_by_client and not master_flag:
                 keyboard.add(buttons.mark_as_canceled_by_client(order.id, call.message.message_id + counter))
             canceled = ''
+
             if order.canceled_by_system:
                 canceled = '\n\nВідхилено системою. \n'
             elif order.canceled_by_master:
                 canceled = '\n\nВідхилено майстром. \n'
             elif order.canceled_by_client:
                 canceled = '\n\nВідхилено клієнтом. \n'
-            bot.send_message(user_id,
-                             f'`Назва послуги:` {str(service[0].name)} \n'
-                             f'`Початок о:` {start_time[0]}-{start_time[1]}  \n'
-                             f'`День тижня:` {day[0].day_name} \n'
-                             f'`Дата`: {date} \n'
-                             f"`Ім'я майстра:`  {str(master[0].name)} \n"
-                             f"`Телефон майстра:` {str(master[0].telephone)} \n"
-                             f"`Ім'я клієнта:` {str(client[0].name)} \n"
-                             f"`Телефон клієнта:` {str(client[0].telephone)} \n"
-                             f"`Передплачено: ` {str(prepaid)}{canceled}",
-                             reply_markup=keyboard, parse_mode='markdown')
+
+            if order.self_res:
+                bot.send_message(user_id,
+                                 f'*Саморезервація* \n\n'
+                                 f'Назва послуги: {str(service[0].name)} \n'
+                                 f'Початок о: {start_time[0]}-{start_time[1]}  \n'
+                                 f'День тижня: {day[0].day_name} \n'
+                                 f'Дата: {date} \n'
+                                 f"Ім'я майстра:  {str(master[0].name)} \n"
+                                 f"Телефон майстра: {str(master[0].telephone)} \n"
+                                 f"Опис: {order.description} {canceled}",
+                                 reply_markup=keyboard)
+            else:
+                bot.send_message(user_id,
+                                 f'Назва послуги: {str(service[0].name)} \n'
+                                 f'Початок о: {start_time[0]}-{start_time[1]}  \n'
+                                 f'День тижня: {day[0].day_name} \n'
+                                 f'Дата: {date} \n'
+                                 f"Ім'я майстра:  {str(master[0].name)} \n"
+                                 f"Телефон майстра: {str(master[0].telephone)} \n"
+                                 f"Ім'я клієнта: {str(client[0].name)} \n"
+                                 f"Телефон клієнта: {str(client[0].telephone)} \n"
+                                 f"Передплачено: {str(prepaid)}{canceled}",
+                                 reply_markup=keyboard)
+
         counter += 1
     bot.send_message(user_id, 'Повернутись у меню', reply_markup=buttons.to_menu())
 
@@ -1913,8 +1928,7 @@ def show_certificates(index, end_index, certificates, user_id):
         logging.error(f'Could not load certificate image. Cause: {ex}')
         img = open(data_path + 'default.jpeg', 'rb')
     bot.send_photo(user_id, photo=img,
-                   caption=f"`Опис:` {certificates[int(index)].description} \n\n", reply_markup=keyboard,
-                   parse_mode='markdown')
+                   caption=f"Опис: {certificates[int(index)].description} \n\n", reply_markup=keyboard)
 
 
 def show_services(index, end_index, services, user_id):
@@ -1927,9 +1941,8 @@ def show_services(index, end_index, services, user_id):
         logging.error(f'Could not load service image. Cause: {ex}. Time: {time.asctime()}')
         img = open(data_path + 'default.jpeg', 'rb')
     bot.send_photo(user_id, photo=img,
-                   caption=f"`Назва:` {services[int(index)].name} \n\n",
-                   reply_markup=keyboard,
-                   parse_mode='markdown')
+                   caption=f"Назва: {services[int(index)].name} \n\n",
+                   reply_markup=keyboard)
 
 
 def show_masters(index, end_index, masters, user_id, is_saved=False, message_id=False):
