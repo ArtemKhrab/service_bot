@@ -63,6 +63,7 @@ class User_role(Base):
     master = Column(Boolean, default=False)
     client_admin = Column(Boolean, default=False)
     master_admin = Column(Boolean, default=False)
+    super_admin = Column(Boolean, default=False)
 
 
 class Saved_placement(Base):

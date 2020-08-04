@@ -718,3 +718,16 @@ def delete_from_favorites(master_id, user_id):
                                             Saved_masters.client_id == user_id). \
             delete()
     session.commit()
+
+
+def get_all_users():
+    users = session.query(User_role).all()
+    users_ids = []
+    for user_instance in users:
+        users_ids.append(user_instance.id)
+    return users_ids
+
+def is_super_admin(user_id):
+    user_instance = session.query(User_role.super_admin).filter(User_role.id == user_id)
+    return user_instance[0].super_admin
+

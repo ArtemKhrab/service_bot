@@ -3,7 +3,7 @@ import re
 from methods import *
 import os
 import telebot
-import base64
+# import base64
 import time
 import logging
 import calculations
@@ -28,6 +28,38 @@ try:
 except Exception as critical:
     logging.critical(f'Could not execute weekly update. Cause {critical}')
     bot.send_message(405423146, f'Не удалось выполнить дейли апдейт... {critical}')
+
+
+@bot.message_handler(commands=['send_to_everyone'])
+def mailing(message):
+
+    if not is_super_admin(message.from_user.id):
+        return
+
+    bot.send_message(message.from_user.id, f"Что рассылать:")
+    users = get_all_users()
+    bot.register_next_step_handler(message, send_to_everyone, users)
+
+
+def send_to_everyone(message, users):
+
+    if message.content_type == 'text':
+
+        for user_id in users:
+
+            if user_id != str(message.from_user.id):
+                bot.send_message(user_id, message.text)
+
+    elif message.content_type == 'photo':
+
+        for user_id in users:
+
+            if user_id != str(message.from_user.id):
+                bot.send_photo(user_id, get_photo(message), caption=message.caption)
+
+    else:
+        bot.send_message(message.from_user.id, "Тип данных не поддерживается. "
+                                               "Можно рассылать только тект либо картинки")
 
 
 @bot.message_handler(commands=['admin'])
@@ -1761,16 +1793,16 @@ def set_acc_photo(message, reg):
         edit_profile(message.from_user.id, 'master')
 
 
-def set_card(message):
-    try:
-        update_card(message.from_user.id, base64.standard_b64encode(message.text.encode('UTF-8')))
-    except Exception as ex:
-        logging.error(f'Could not set credit card. Cause: {ex}. Time: {time.asctime()}')
-        session.rollback()
-        return
-    bot.send_message(message.from_user.id,
-                     'Напишіть опис до аккаунту, що ви вмієте і тд.')
-    bot.register_next_step_handler(message, set_acc_details)
+# def set_card(message):
+#     try:
+#         update_card(message.from_user.id, base64.standard_b64encode(message.text.encode('UTF-8')))
+#     except Exception as ex:
+#         logging.error(f'Could not set credit card. Cause: {ex}. Time: {time.asctime()}')
+#         session.rollback()
+#         return
+#     bot.send_message(message.from_user.id,
+#                      'Напишіть опис до аккаунту, що ви вмієте і тд.')
+#     bot.register_next_step_handler(message, set_acc_details)
 
 
 def set_acc_details(message):
