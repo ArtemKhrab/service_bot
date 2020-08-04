@@ -2038,7 +2038,7 @@ def start_bot():
     logging.basicConfig(filename='.log', format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s')
     try:
         check_start_up_data()
-        bot.polling(none_stop=True)
+        bot.polling()
     except Exception as e:
         logging.error(f'Could not start a bot. Cause: {e}. Time: {time.asctime()}')
 
