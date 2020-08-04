@@ -1950,12 +1950,11 @@ def show_masters(index, end_index, masters, user_id, is_saved=False, message_id=
     for segment in segments:
         segments_text += '🔸 ' + segment + '\n'
     bot.send_photo(user_id, photo=img,
-                   caption=f"`Ім'я:` {masters[int(index)].name} \n\n"
-                           f"`Опис:` {masters[int(index)].details} \n\n"
-                           f'`Категорії робіт, які виконує майстер`:\n{segments_text} \n'
-                           f"`Рейтинг: `" + "⭐️" * int(get_point(masters[int(index)].user_id))
-                           + "\n\n", reply_markup=keyboard,
-                   parse_mode='markdown')
+                   caption=f"Ім'я: {masters[int(index)].name} \n\n"
+                           f"Опис: {masters[int(index)].details} \n\n"
+                           f'Категорії робіт, які виконує майстер:\n{segments_text} \n'
+                           f"Рейтинг: " + "⭐️" * int(get_point(masters[int(index)].user_id))
+                           + "\n\n", reply_markup=keyboard)
 
 
 bot.enable_save_next_step_handlers(delay=2)
