@@ -10,27 +10,24 @@ import calculations
 import schedule
 from config import token
 from multiprocessing import Process
+import sys
+
+
+sys.tracebacklimit = 0
+bot = telebot.TeleBot(token=token)
+data_path = os.curdir + '\\data\\'
 
 try:
     schedule.every().day.at('02:00').do(daily_update)
 except Exception as critical:
     logging.critical(f'Could not execute daily update. Cause {critical}')
-    try:
-        schedule.every().day.at('03:00').do(daily_update)
-    except Exception as critical:
-        logging.critical(f'Could not execute daily update (second attempt). Cause {critical}')
+    bot.send_message(405423146, f'Не удалось выполнить дейли апдейт... {critical}')
 
 try:
     schedule.every().monday.at('02:00').do(weekly_update)
 except Exception as critical:
     logging.critical(f'Could not execute weekly update. Cause {critical}')
-    try:
-        schedule.every().day.at('03:00').do(daily_update)
-    except Exception as critical:
-        logging.critical(f'Could not execute daily update (second attempt). Cause {critical}')
-
-bot = telebot.TeleBot(token=token)
-data_path = os.curdir + '\\data\\'
+    bot.send_message(405423146, f'Не удалось выполнить дейли апдейт... {critical}')
 
 
 @bot.message_handler(commands=['start'])
@@ -1971,7 +1968,7 @@ def start_schedule():
 
 
 def start_bot():
-    logging.basicConfig(filename='.log')
+    logging.basicConfig(filename='.log', format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s')
     try:
         check_start_up_data()
         bot.polling(none_stop=True)
