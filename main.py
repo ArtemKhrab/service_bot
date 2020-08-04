@@ -13,7 +13,7 @@ from multiprocessing import Process
 import sys
 
 
-sys.tracebacklimit = 0
+# sys.tracebacklimit = 0
 bot = telebot.TeleBot(token=token)
 data_path = os.curdir + '\\data\\'
 
@@ -409,11 +409,11 @@ def callback_handler(call):
     elif 'check_services' in call.data:
         data = call.data.split(' ')
         try:
-            reservation = data[2]
+            reservation = data[3]
         except Exception as ex:
             print(ex)
             reservation = None
-        keyboard = buttons.service_segments(data[1], False, call.from_user.id, reservation)
+        keyboard = buttons.service_segments(data[1], False, call.from_user.id, reservation, check=data[2])
         bot.send_message(call.from_user.id, 'Оберіть сегмент послуг 🧚🏻‍',
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
@@ -427,15 +427,14 @@ def callback_handler(call):
             bot.register_next_step_handler(call.message, take_brake, call)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
-
-        keyboard = buttons.get_services(data[2], call.from_user.id, data[1], data[3])
+        keyboard = buttons.get_services(data[2], call.from_user.id, data[1], data[3], check=data[4])
 
         if keyboard is None:
             bot.answer_callback_query(call.id, text="Майстер не надає цей тип послуг")
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
 
-        if (str(call.from_user.id) is str(data[2])) and (data[3] != 'reservation'):
+        if (str(call.from_user.id) is str(data[2])) and (data[3] != 'reservation') and (data[4] == 'check'):
             segment_text = 'Уточніть процедуру 🗂' if keyboard[1] is not None else \
                 'Послуги для цієї категорії не визначені. ' \
                 'Зверніться до адміністратора для того, щоб додати список послуг'
@@ -504,17 +503,17 @@ def callback_handler(call):
     elif 'choose_service ' in call.data:
         data = call.data.split(' ')
         if data[3] == 'not_confirmed':
-            user_confirmation(call, data[1], data[2])
+            user_confirmation(call, data[1], data[2], data[4])
         elif data[3] == 'confirmed':
             bot.delete_message(call.from_user.id, call.message.message_id)
-            keyboard = buttons.choose_week(data[1], data[2])
+            keyboard = buttons.choose_week(data[1], data[2], data[4])
             bot.send_message(call.from_user.id, "Оберіть тиждень, на який хочете записатися🗓:", reply_markup=keyboard)
 
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
     elif 'choose_week' in call.data:
         data = call.data.split(' ')
-        show_working_days(call, data[1], data[2], data[3])
+        show_working_days(call, data[1], data[2], data[3], data[4])
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
 
@@ -792,7 +791,7 @@ def callback_handler(call):
             session.rollback()
             bot.answer_callback_query(call.id, text="Виникла помилка!")
             return
-        keyboard = buttons.service_segments(call.from_user.id, False, call.from_user.id)
+        keyboard = buttons.service_segments(call.from_user.id, False, call.from_user.id, check='check')
         bot.send_message(call.from_user.id, 'Оберіть сегмент послуг 🧚🏻‍',
                          reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
@@ -1053,7 +1052,7 @@ def callback_handler(call):
                              'Напишіть час, на який '
                              'хочете записатися (формат: 13-00)')
             bot.register_next_step_handler(call.message, get_time_slots, day_det, service_det, data[1], data[2],
-                                           data[3], data[5], call)
+                                           data[3], data[5], data[6], call)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
             return
 
@@ -1061,7 +1060,7 @@ def callback_handler(call):
         if response[0] is None:
             bot.send_message(call.from_user.id, response[1])
             return
-        keyboard = buttons.set_hours(data[2], data[3], data[1], data[5], response[0])
+        keyboard = buttons.set_hours(data[2], data[3], data[1], data[5], response[0], data[6])
         bot.send_message(call.from_user.id, response[1], reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
@@ -1069,7 +1068,7 @@ def callback_handler(call):
     elif 'create_order' in call.data:
         bot.delete_message(call.from_user.id, call.message.message_id)
         data = call.data.split(' ')
-        order_creation(data[1], data[2], data[3], data[4], data[5], call)
+        order_creation(data[1], data[2], data[3], data[4], data[5], data[6], call)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
 
     elif call.data == 'settings_client':
@@ -1115,31 +1114,44 @@ def take_brake(message, call):
         return
 
 
-def order_creation(master_id, service_id, day_id, time_slot, next_week, call):
+def order_creation(master_id, service_id, day_id, time_slot, next_week, reservation, call):
+    if reservation == 'reservation':
+        bot.send_message(call.from_user.id, 'Напишіть опис до замовлення. '
+                                            'Наприклад ім`я та телефон замовника...')
+        bot.register_next_step_handler(call.message, create_self_reservation, master_id, service_id,
+                                       day_id, time_slot, next_week, call)
+        return
     bot.send_message(call.from_user.id, 'Предоплата и тд...')
     create_order(master_id, call.from_user.id, day_id, time_slot, service_id, next_week)
     bot.send_message(call.from_user.id, f"Заявка створена!")
     to_menu(call.from_user.id)
 
 
-def get_time_slots(message, day_det, service_det, day_id, master_id, service_id, next_week, call):
+def create_self_reservation(message, master_id, service_id, day_id, time_slot, next_week, call):
+    create_order(master_id, call.from_user.id, day_id, time_slot, service_id, next_week, self_res=True,
+                 description=message.text)
+    bot.send_message(call.from_user.id, f"Заявка створена!")
+    to_menu(call.from_user.id)
+
+
+def get_time_slots(message, day_det, service_det, day_id, master_id, service_id, next_week, reservation, call):
     if not re.match(r'^([0-1]?[0-9]|2[0-3])-[0-5][0-9]$', message.text):
         bot.send_message(message.chat.id, 'Формат часу: 1-15 – це буде одна '
                                           'година, 15 хвилин.')
         bot.register_next_step_handler(message, get_time_slots, service_det, day_id, master_id, service_id, next_week,
-                                       call)
+                                       reservation, call)
         return
 
     response = calculations.check_available_time(day_det, service_det, req=message.text, set_custom_time=True)
     bot.send_message(call.from_user.id, response[1])
     if response[0] is not None:
-        order_creation(master_id, service_id, day_id, response[0], next_week, call)
+        order_creation(master_id, service_id, day_id, response[0], next_week, reservation, call)
     else:
-        show_working_days(call, master_id, service_id, next_week)
+        show_working_days(call, master_id, service_id, next_week, reservation)
 
 
-def user_confirmation(call, master_id, service_id):
-    keyboard = buttons.user_confirmation_buttons(master_id, service_id)
+def user_confirmation(call, master_id, service_id, reservation):
+    keyboard = buttons.user_confirmation_buttons(master_id, service_id, reservation)
     service = get_service_by_id(service_id)
     master = get_master_by_id(master_id)
     bot.send_message(call.from_user.id, f"Ім'я майстра: {master[0].name} \n"
@@ -1150,13 +1162,13 @@ def user_confirmation(call, master_id, service_id):
                      reply_markup=keyboard)
 
 
-def show_working_days(call, master_id, service_id, next_week):
+def show_working_days(call, master_id, service_id, next_week, reservation):
     try:
         days = get_available_days(master_id, calculations.get_current_day(), next_week)
     except Exception as ex:
         logging.error(f'Could not get available days. Cause: {ex}. Time: {time.asctime()}')
         return
-    keyboard = buttons.reserve_day(days, master_id, service_id, next_week)
+    keyboard = buttons.reserve_day(days, master_id, service_id, next_week, reservation)
 
     if keyboard is None:
         keyboard = buttons.empty_template()
@@ -1459,7 +1471,7 @@ def edit_sample_service_name(message, service_id):
 
 
 def edit_service(user_id, segment):
-    keyboard = buttons.get_services(user_id, user_id, segment, None)
+    keyboard = buttons.get_services(user_id, user_id, segment, None, True)
     bot.send_message(user_id, keyboard[0],
                      reply_markup=keyboard[1])
 

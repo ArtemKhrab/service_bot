@@ -504,12 +504,20 @@ def get_day_details(day_id, next_week='0'):
     return [day[0], orders]
 
 
-def create_order(master_id, client_id, day_id, time_slot, service_id, next_week, take_brake=False):
+def create_order(master_id, client_id, day_id, time_slot, service_id, next_week, take_brake=False, self_res=False,
+                 description=None):
     try:
         service = session.query(Service_type).filter(Service_type.id == service_id).all()
     except Exception as ex:
         print(ex)
         return
+
+    service_time_cost = service[0].time_cost.split('-')
+    time_slot_start = time_slot.split('-')
+    time_item = datetime.now()
+    service_time = time_item.replace(hour=int(time_slot_start[0]), minute=int(time_slot_start[1]))
+    service_time = service_time + timedelta(hours=int(service_time_cost[0]), minutes=int(service_time_cost[1]))
+
     if take_brake:
         if get_user_role(client_id):
             instance = Order(master_id=master_id, client_id_master_acc=client_id, day_id=day_id,
@@ -522,11 +530,45 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
         session.commit()
         return
 
-    service_time_cost = service[0].time_cost.split('-')
-    time_slot_start = time_slot.split('-')
-    time_item = datetime.now()
-    service_time = time_item.replace(hour=int(time_slot_start[0]), minute=int(time_slot_start[1]))
-    service_time = service_time + timedelta(hours=int(service_time_cost[0]), minutes=int(service_time_cost[1]))
+    if self_res:
+        if get_user_role(client_id):
+            instance = Order(master_id=master_id, client_id_master_acc=client_id, day_id=day_id,
+                             time=time_slot + f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
+                             money_cost=service[0].money_cost, next_week=(True if next_week == '1' else False),
+                             self_res=True, description=description)
+        else:
+            instance = Order(master_id=master_id, client_id=client_id, day_id=day_id,
+                             time=time_slot + f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
+                             money_cost=service[0].money_cost, next_week=(True if next_week == '1' else False),
+                             self_res=True, description=description)
+        session.add(instance)
+        session.flush()
+        master = get_master(master_id)
+        placement = get_placement_by_id(master[0].placement_id)
+        day = get_day_details(day_id)
+        try:
+            g_event_id = \
+                time_slots_managment.process_calendar_instance(title=service[0].name,
+                                                               description=f'*Саморезервація*\n'
+                                                                           f'{service[0].name}. \n'
+                                                                           f'Назва салону: {placement.name} \n'
+                                                                           f'Адреса: {placement.address} \n\n'
+                                                                           f'Ім`я майстра: {master[0].name} \n'
+                                                                           f'Телефон майстра: {master[0].telephone} \n\n'
+                                                                           f'{description}',
+                                                               start_end_time=
+                                                               time_slot + f'-{str(service_time.strftime("%H-%M"))}',
+                                                               day_num=day[0].day_num,
+                                                               master_email=master[0].email,
+                                                               next_week=next_week,
+                                                               client_email=master[0].email)
+        except Exception as ex:
+            print(ex)
+            return
+        session.query(Order).filter(Order.id == instance.id).update({Order.g_calendar_id: g_event_id},
+                                                                    synchronize_session=False)
+        session.commit()
+        return
 
     if get_user_role(client_id):
         instance = Order(master_id=master_id, client_id_master_acc=client_id, day_id=day_id,

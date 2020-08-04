@@ -147,6 +147,8 @@ class Order(Base):
     money_cost = Column(String(6))
     next_week = Column(Boolean)
     g_calendar_id = Column(String(100))
+    self_res = Column(Boolean, default=False)
+    description = Column(String(256))
     order_free_time = Column(Boolean, default=False)
     canceled_by_client = Column(Boolean, default=False)
     canceled_by_master = Column(Boolean, default=False)
