@@ -4,7 +4,8 @@ token.pickle
 /__pycache__
 /.handler-saves
 /venv
-data/dafault.jpeg
+#data/dafault.jpeg
 .env
-/data
+/data/*/
 *.log
+!/data/done.jpg

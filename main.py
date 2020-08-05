@@ -42,23 +42,40 @@ def mailing(message):
 
 
 @bot.message_handler(commands=['daily_update'])
-def mailing(message):
+def d_update(message):
 
     if not is_super_admin(message.from_user.id):
         return
+    try:
+        daily_update()
+    except Exception as ex:
+        print(ex)
+        bot.send_message(message.from_user.id, 'Не проапдейтилось...')
+        return
 
-    daily_update()
+    with open(data_path+'done.jpg', 'rb') as done_pic:
+        bot.send_photo(message.from_user.id, photo=done_pic)
+
     return
 
 
 @bot.message_handler(commands=['weekly_update'])
-def mailing(message):
+def w_update(message):
 
     if not is_super_admin(message.from_user.id):
         return
 
-    weekly_update()
-    return 
+    try:
+        weekly_update()
+    except Exception as ex:
+        print(ex)
+        bot.send_message(message.from_user.id, 'Не проапдейтилось...')
+        return
+
+    with open(data_path+'done.jpg', 'rb') as done_pic:
+        bot.send_photo(message.from_user.id, photo=done_pic)
+
+    return
 
 
 def send_to_everyone(message, users):
@@ -80,6 +97,11 @@ def send_to_everyone(message, users):
     else:
         bot.send_message(message.from_user.id, "Тип данных не поддерживается. "
                                                "Можно рассылать только тект либо картинки")
+        return
+
+    with open(data_path+'done.jpg', 'rb') as done_pic:
+        bot.send_photo(message.from_user.id, photo=done_pic)
+    return
 
 
 @bot.message_handler(commands=['admin'])
