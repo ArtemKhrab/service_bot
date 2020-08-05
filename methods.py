@@ -695,7 +695,6 @@ def daily_update():
             time_slots_managment.process_calendar_instance(delete=True, calendar_instance_id=item.g_calendar_id)
         except Exception as ex:
             print(ex)
-    print(1)
     session.commit()
 
 

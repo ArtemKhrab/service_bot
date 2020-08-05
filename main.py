@@ -15,7 +15,7 @@ bot = telebot.TeleBot(token=token)
 data_path = os.curdir + '\\data\\'
 
 try:
-    schedule.every().day.at('15:24').do(daily_update)
+    schedule.every().day.at('02:00').do(daily_update)
 except Exception as critical:
     logging.critical(f'Could not execute daily update. Cause {critical}')
     bot.send_message(405423146, f'Не удалось выполнить дейли апдейт... {critical}')
