@@ -738,7 +738,7 @@ def get_all_users():
 
 
 def get_all_clients():
-    users = session.query(User_role).filter(User_role.master is False).all()
+    users = session.query(User_role).filter(User_role.master == '0').all()
     users_ids = []
     for user_instance in users:
         users_ids.append(user_instance.id)
@@ -746,7 +746,7 @@ def get_all_clients():
 
 
 def get_all_masters():
-    users = session.query(User_role).filter(User_role.master is True).all()
+    users = session.query(User_role).filter(User_role.master == '1').all()
     users_ids = []
     for user_instance in users:
         users_ids.append(user_instance.id)
@@ -754,8 +754,8 @@ def get_all_masters():
 
 
 def get_all_admins():
-    users = session.query(User_role).filter(or_(User_role.super_admin is True, User_role.client_admin is True,
-                                                User_role.master_admin is True)).all()
+    users = session.query(User_role).filter(or_(User_role.super_admin == '1', User_role.client_admin == '1',
+                                                User_role.master_admin == '1')).all()
     users_ids = []
     for user_instance in users:
         users_ids.append(user_instance.id)
