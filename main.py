@@ -161,14 +161,20 @@ def send_to_everyone(message, users):
         for user_id in users:
 
             if user_id != str(message.from_user.id):
-                bot.send_message(user_id, message.text)
+                try:
+                    bot.send_message(user_id, message.text)
+                except Exception as ex:
+                    print(ex)
 
     elif message.content_type == 'photo':
 
         for user_id in users:
 
             if user_id != str(message.from_user.id):
-                bot.send_photo(user_id, get_photo(message), caption=message.caption)
+                try:
+                    bot.send_photo(user_id, get_photo(message), caption=message.caption)
+                except Exception as ex:
+                    print(ex)
 
     else:
         bot.send_message(message.from_user.id, "Тип данных не поддерживается. "
@@ -508,7 +514,7 @@ def callback_handler(call):
             bot.answer_callback_query(call.id, text="На жаль, у даному салоні майстри ще не зареєестровані :(")
             return
 
-        bot.send_message(call.from_user.id, 'А зараз оберіть майстра', reply_markup=buttons.keyboard_menu_button())
+        bot.send_message(call.from_user.id, '<<<<<< А зараз оберіть майстра >>>>>>', reply_markup=buttons.keyboard_menu_button())
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         index = 0
         try:
@@ -1174,27 +1180,27 @@ def callback_handler(call):
     elif 'show_certificates_settings' in call.data:
         data = call.data.split(' ')
         keyboard = buttons.show_certificates(data[1])
-        bot.send_message(call.from_user.id, 'Меню сертифікатів:', reply_markup=keyboard)
+        bot.send_message(call.from_user.id, '<<<<<< Меню сертифікатів: >>>>>>', reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
 
     elif 'show_sample_services_settings' in call.data:
         data = call.data.split(' ')
         keyboard = buttons.show_sample_services(data[1])
-        bot.send_message(call.from_user.id, 'Меню прикладів робіт:', reply_markup=keyboard)
+        bot.send_message(call.from_user.id, '<<<<<< Меню прикладів робіт: >>>>>>', reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
 
     elif 'show_services_settings' in call.data:
         data = call.data.split(' ')
         keyboard = buttons.show_service(data[1])
-        bot.send_message(call.from_user.id, 'Меню послуг:', reply_markup=keyboard)
+        bot.send_message(call.from_user.id, '<<<<<< Меню послуг: >>>>>>', reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
 
     elif call.data == 'show_orders_master':
         keyboard = buttons.check_order_menu()
-        bot.send_message(call.from_user.id, 'Меню записів:', reply_markup=keyboard)
+        bot.send_message(call.from_user.id, '<<<<<< Меню записів: >>>>>>', reply_markup=keyboard)
         bot.answer_callback_query(call.id, text=" ", show_alert=False)
         return
 
@@ -1567,7 +1573,7 @@ def to_menu(user_id):
     except Exception as ex:
         logging.error(f'Could not get user data. Func: to_menu . Cause: {ex}. Time: {time.asctime()}')
         return
-    bot.send_message(user_id, 'Головне меню 🏠', reply_markup=keyboard)
+    bot.send_message(user_id, '<<<<<< Головне меню 🏠 >>>>>>', reply_markup=keyboard)
 
 
 def edit_sample_service(service_id, user_id):
