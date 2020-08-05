@@ -531,7 +531,7 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
 
         session.add(instance)
         session.commit()
-        return
+        return instance
 
     if self_res:
         if get_user_role(client_id):
@@ -571,7 +571,7 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
         session.query(Order).filter(Order.id == instance.id).update({Order.g_calendar_id: g_event_id},
                                                                     synchronize_session=False)
         session.commit()
-        return
+        return instance
 
     if get_user_role(client_id):
         instance = Order(master_id=master_id, client_id_master_acc=client_id, day_id=day_id,
@@ -612,6 +612,7 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
     session.query(Order).filter(Order.id == instance.id).update({Order.g_calendar_id: g_event_id},
                                                                 synchronize_session=False)
     session.commit()
+    return instance
 
 
 def get_orders_for_master(master_id, done):

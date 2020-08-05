@@ -1249,9 +1249,18 @@ def order_creation(master_id, service_id, day_id, time_slot, next_week, reservat
         bot.register_next_step_handler(call.message, create_self_reservation, master_id, service_id,
                                        day_id, time_slot, next_week, call)
         return
-    bot.send_message(call.from_user.id, 'Предоплата и тд...')
-    create_order(master_id, call.from_user.id, day_id, time_slot, service_id, next_week)
-    bot.send_message(call.from_user.id, f"Заявка створена!")
+    # bot.send_message(call.from_user.id, 'Предоплата и тд...')
+    instance = create_order(master_id, call.from_user.id, day_id, time_slot, service_id, next_week)
+    day = get_day_details(instance.day_id, instance.next_week)
+    if instance is not None:
+        bot.send_message(call.from_user.id, f"Заявку створено! \n\n"
+                                            f"Номер заявки: {instance.id} \n"
+                                            f"Час: {instance.time}\n"
+                                            f"Дата: {calculations.get_date_by_day_number(day[0].day_num, instance.next_week).strftime('%Y-%m-%d')}\n"
+                                            f"Детальну інформацію Ви можете переглянути в розділі 'Мої записи' -> \n"
+                                            f"'У процесі виконання'")
+    else:
+        bot.send_message(call.from_user.id, "Щос пішло не так, відправте скріншот цієї переписки сюди - @fjskdb ")
     to_menu(call.from_user.id)
 
 
