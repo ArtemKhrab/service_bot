@@ -10,6 +10,7 @@ import calculations
 import schedule
 from config import token
 from multiprocessing import Process
+
 # import sys
 
 
@@ -32,7 +33,6 @@ except Exception as critical:
 
 @bot.message_handler(commands=['send_to_everyone'])
 def mailing(message):
-
     if not is_super_admin(message.from_user.id):
         return
 
@@ -43,7 +43,6 @@ def mailing(message):
 
 @bot.message_handler(commands=['daily_update'])
 def d_update(message):
-
     if not is_super_admin(message.from_user.id):
         return
     try:
@@ -53,7 +52,7 @@ def d_update(message):
         bot.send_message(message.from_user.id, 'Не проапдейтилось...')
         return
 
-    with open(data_path+'done.jpg', 'rb') as done_pic:
+    with open(data_path + 'done.jpg', 'rb') as done_pic:
         bot.send_photo(message.from_user.id, photo=done_pic)
 
     return
@@ -61,7 +60,6 @@ def d_update(message):
 
 @bot.message_handler(commands=['weekly_update'])
 def w_update(message):
-
     if not is_super_admin(message.from_user.id):
         return
 
@@ -72,14 +70,59 @@ def w_update(message):
         bot.send_message(message.from_user.id, 'Не проапдейтилось...')
         return
 
-    with open(data_path+'done.jpg', 'rb') as done_pic:
+    with open(data_path + 'done.jpg', 'rb') as done_pic:
         bot.send_photo(message.from_user.id, photo=done_pic)
 
     return
 
 
-def send_to_everyone(message, users):
+@bot.message_handler(commands=['help'])
+def bot_help(message):
+    if is_super_admin(message.from_user.id):
+        bot.send_message(message.from_user.id,
+                         "У Вас є права адміна.\n "
+                         "Що Ви можете: \n"
+                         "/send_to_everyone - розсилка повідомлень, підтримуються лише текстові повідомленя та фотографії\n"
+                         "/daily_update - апдейт бази даних (всі заяки, які не були виконані, стануть неактивними)\n"
+                         "/weekly_update - апдейт бази даних (зміщення тиждня на 1 вперед)\n\n"
+                         "* ці апдейти виконуються системою автоматично, але якщо трипились якісь негаразди - їх "
+                         "потрібно виконати вручну\n\n"
+                         "Всі питання та пропозиції сюди - @fjskdb (Артём)"
+                         )
+    else:
+        bot.send_message(message.from_user.id,
+                         "Якщо Ви не зареєстровані:\n"
+                         "▫️ натисніть /start \n"
+                         "▫️ з'явиться кнопка реєстрації, натисніть на її\n"
+                         "▫️ оберіть роль (якщо Ви працюєте майстром, то оберіть 'майстер', якщо хочете отримати послугу"
+                         " - оберіть 'клієнт'\n"
+                         "▫️ слідкуйте за інструкціями, які Вам надасть бот\n\n"
+                         "Якщо ви вже зареєстровані:\n"
+                         "▫️ натисніть на кнопку Головне меню, яка є на вашій клавіатурі, щоб перейти до меню\n"
+                         "Якщо її немає:\n"
+                         "▫️ натисніть /start\n"
+                         "▫️ з'явиться кнопка меню, натисніть на її\n\n"
+                         "Як замовити послугу:\n"
+                         "▫️ переходите до меню\n"
+                         "▫️ натискаєте 'Записатись на процедуру'\n"
+                         "▫️ обираєте салон\n"
+                         "▫️ обираєте майстра\n"
+                         "▫️ на вікні майстра натискаєте кнопку 'Обрати послугу'\n"
+                         "▫️ обираєте сегмент послуг, який хочете отримати\n"
+                         "▫️ обираєте послугу\n"
+                         "▫️ виводится деталі про послугу, якщо Ви з всім згодні, то натискайте 'Далі', якщо ні - 'Повернутися'\n"
+                         "▫️ обираєте тиждень, доступні лише поточний та наступний тиждні\n"
+                         "▫️ обираєте день\n"
+                         "▫️ обирайте час, можна обрати з запропонованого, або ж спробувати задати свій, якщо майстер"
+                         "вільний у цей час - Вас запише.\n"
+                         "▫️ слідкуйте на інструкціями\n"
+                         "▫️ після створеня заявки, Ви можете переглянути, у google календарі буде відмітка з Вашою послугою"
+                         " (якщо ви вказали пошту gmail)\n\n"
+                         "Всі питання та пропозиції сюди - @fjskdb (Артём)"
+                         )
 
+
+def send_to_everyone(message, users):
     if message.content_type == 'text':
 
         for user_id in users:
@@ -99,7 +142,7 @@ def send_to_everyone(message, users):
                                                "Можно рассылать только тект либо картинки")
         return
 
-    with open(data_path+'done.jpg', 'rb') as done_pic:
+    with open(data_path + 'done.jpg', 'rb') as done_pic:
         bot.send_photo(message.from_user.id, photo=done_pic)
     return
 
@@ -2077,7 +2120,8 @@ def start_schedule():
 
 
 def start_bot():
-    logging.basicConfig(filename='.log', format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s')
+    logging.basicConfig(filename='.log',
+                        format=u'%(filename)s[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s')
     try:
         check_start_up_data()
         bot.polling()
