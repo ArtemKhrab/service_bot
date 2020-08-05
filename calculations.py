@@ -82,7 +82,7 @@ def check_available_time(day_det, service_det, req=None, set_custom_time=False, 
                         return [None, "Даний час вже зайнято. Будь ласка, оберіть інший"]
 
                 else:
-                    return [req, f"Вас записно на {req}"]
+                    return [req, f"Вас записано на {req}"]
 
         else:
             return [None,

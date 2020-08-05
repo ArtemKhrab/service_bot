@@ -515,12 +515,6 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
         print(ex)
         return
 
-    service_time_cost = service[0].time_cost.split('-')
-    time_slot_start = time_slot.split('-')
-    time_item = datetime.now()
-    service_time = time_item.replace(hour=int(time_slot_start[0]), minute=int(time_slot_start[1]))
-    service_time = service_time + timedelta(hours=int(service_time_cost[0]), minutes=int(service_time_cost[1]))
-
     if take_brake:
         if get_user_role(client_id):
             instance = Order(master_id=master_id, client_id_master_acc=client_id, day_id=day_id,
@@ -532,6 +526,12 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
         session.add(instance)
         session.commit()
         return instance
+
+    service_time_cost = service[0].time_cost.split('-')
+    time_slot_start = time_slot.split('-')
+    time_item = datetime.now()
+    service_time = time_item.replace(hour=int(time_slot_start[0]), minute=int(time_slot_start[1]))
+    service_time = service_time + timedelta(hours=int(service_time_cost[0]), minutes=int(service_time_cost[1]))
 
     if self_res:
         if get_user_role(client_id):
@@ -707,6 +707,7 @@ def weekly_update():
         print(ex)
         return
 
+
 def get_segments_for_master(master_id):
     services = session.query(Service_type.segment_id).filter(Service_type.master_id == master_id).all()
     segments = []
@@ -734,6 +735,32 @@ def get_all_users():
     for user_instance in users:
         users_ids.append(user_instance.id)
     return users_ids
+
+
+def get_all_clients():
+    users = session.query(User_role).filter(User_role.master is False).all()
+    users_ids = []
+    for user_instance in users:
+        users_ids.append(user_instance.id)
+    return users_ids
+
+
+def get_all_masters():
+    users = session.query(User_role).filter(User_role.master is True).all()
+    users_ids = []
+    for user_instance in users:
+        users_ids.append(user_instance.id)
+    return users_ids
+
+
+def get_all_admins():
+    users = session.query(User_role).filter(or_(User_role.super_admin is True, User_role.client_admin is True,
+                                                User_role.master_admin is True)).all()
+    users_ids = []
+    for user_instance in users:
+        users_ids.append(user_instance.id)
+    return users_ids
+
 
 def is_super_admin(user_id):
     user_instance = session.query(User_role.super_admin).filter(User_role.id == user_id)

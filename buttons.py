@@ -886,6 +886,7 @@ def set_hours(master_id, service_id, day_id, next_week, times, reservation):
                                                           f' {master_id}'
                                                           f' {service_id}'
                                                           f' True'
-                                                          f' {next_week}'))
+                                                          f' {next_week}'
+                                                          f' {reservation}'))
     keyboard.add(back_and_delete())
     return keyboard

@@ -41,6 +41,36 @@ def mailing(message):
     bot.register_next_step_handler(message, send_to_everyone, users)
 
 
+@bot.message_handler(commands=['send_to_masters'])
+def mailing(message):
+    if not is_super_admin(message.from_user.id):
+        return
+
+    bot.send_message(message.from_user.id, f"Что рассылать:")
+    users = get_all_masters()
+    bot.register_next_step_handler(message, send_to_everyone, users)
+
+
+@bot.message_handler(commands=['send_to_clients'])
+def mailing(message):
+    if not is_super_admin(message.from_user.id):
+        return
+
+    bot.send_message(message.from_user.id, f"Что рассылать:")
+    users = get_all_clients()
+    bot.register_next_step_handler(message, send_to_everyone, users)
+
+
+@bot.message_handler(commands=['send_to_admins'])
+def mailing(message):
+    if not is_super_admin(message.from_user.id):
+        return
+
+    bot.send_message(message.from_user.id, f"Что рассылать:")
+    users = get_all_admins()
+    bot.register_next_step_handler(message, send_to_everyone, users)
+
+
 @bot.message_handler(commands=['daily_update'])
 def d_update(message):
     if not is_super_admin(message.from_user.id):
@@ -82,7 +112,10 @@ def bot_help(message):
         bot.send_message(message.from_user.id,
                          "У Вас є права адміна.\n "
                          "Що Ви можете: \n"
-                         "/send_to_everyone - розсилка повідомлень, підтримуються лише текстові повідомленя та фотографії\n"
+                         "/send_to_everyone - розсилка повідомлень всім, підтримуються лише текстові повідомленя та фотографії\n"
+                         "/send_to_clients - розсилка повідомлень клієнтам, підтримуються лише текстові повідомленя та фотографії\n"
+                         "/send_to_masters - розсилка повідомлень майстрам, підтримуються лише текстові повідомленя та фотографії\n"
+                         "/send_to_admins - розсилка повідомлень адмінам, підтримуються лише текстові повідомленя та фотографії\n"
                          "/daily_update - апдейт бази даних (всі заяки, які не були виконані, стануть неактивними)\n"
                          "/weekly_update - апдейт бази даних (зміщення тиждня на 1 вперед)\n\n"
                          "* ці апдейти виконуються системою автоматично, але якщо трипились якісь негаразди - їх "
@@ -1167,18 +1200,19 @@ def callback_handler(call):
 
     elif 'reserve_day' in call.data:
         data = call.data.split(' ')
-        # try:
-        day_det = get_day_details(data[1], data[5])
-        service_det = get_service_by_id(data[3])
-        # except Exception as ex:
-        #     logging.error(f'Could not get day details or service by id. Cause: {ex}. Time {time.asctime()}')
-        #     return
+        try:
+            day_det = get_day_details(data[1], data[5])
+            service_det = get_service_by_id(data[3])
+        except Exception as ex:
+            logging.error(f'Could not get day details or service by id. Cause: {ex}. Time {time.asctime()}')
+            return
 
         if data[4] == 'True':
             bot.delete_message(call.from_user.id, call.message.message_id)
             bot.send_message(call.from_user.id,
                              'Напишіть час, на який '
                              'хочете записатися (формат: 13-00)')
+            print(data)
             bot.register_next_step_handler(call.message, get_time_slots, day_det, service_det, data[1], data[2],
                                            data[3], data[5], data[6], call)
             bot.answer_callback_query(call.id, text=" ", show_alert=False)
