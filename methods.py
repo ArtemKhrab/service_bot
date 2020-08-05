@@ -684,7 +684,7 @@ def daily_update():
                                 Order.canceled_by_client == '0',
                                 Order.canceled_by_master == '0',
                                 Order.canceled_by_system == '0'). \
-        update({Order.canceled_by_system: True}, synchronize_session=False).all()
+        update({Order.canceled_by_system: True}, synchronize_session=False)
     for item in orders:
         try:
             time_slots_managment.process_calendar_instance(delete=True, calendar_instance_id=item.g_calendar_id)
@@ -730,4 +730,3 @@ def get_all_users():
 def is_super_admin(user_id):
     user_instance = session.query(User_role.super_admin).filter(User_role.id == user_id)
     return user_instance[0].super_admin
-
