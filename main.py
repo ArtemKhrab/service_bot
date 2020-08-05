@@ -3,7 +3,6 @@ import re
 from methods import *
 import os
 import telebot
-# import base64
 import time
 import logging
 import calculations
@@ -11,15 +10,12 @@ import schedule
 from config import token
 from multiprocessing import Process
 
-# import sys
 
-
-# sys.tracebacklimit = 0
 bot = telebot.TeleBot(token=token)
 data_path = os.curdir + '\\data\\'
 
 try:
-    schedule.every().day.at('02:00').do(daily_update)
+    schedule.every().day.at('15:24').do(daily_update)
 except Exception as critical:
     logging.critical(f'Could not execute daily update. Cause {critical}')
     bot.send_message(405423146, f'Не удалось выполнить дейли апдейт... {critical}')
@@ -2166,7 +2162,6 @@ def start_schedule():
     while True:
         schedule.run_pending()
         time.sleep(1)
-        print(1)
 
 
 def start_bot():
@@ -2180,10 +2175,16 @@ def start_bot():
 
 
 if __name__ == '__main__':
-    schedule_process = Process(target=start_schedule, daemon=True)
-    schedule_process.start()
     bot_process = Process(target=start_bot)
     bot_process.start()
+    schedule_process = Process(target=start_schedule)
+    schedule_process.start()
+
+    while True:
+        time.sleep(1)
+        if not bot_process.is_alive():
+            schedule_process.terminate()
+            break
 
     # schedule_process.join()
     # bot_process.join()
