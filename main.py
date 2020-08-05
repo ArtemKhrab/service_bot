@@ -41,6 +41,26 @@ def mailing(message):
     bot.register_next_step_handler(message, send_to_everyone, users)
 
 
+@bot.message_handler(commands=['daily_update'])
+def mailing(message):
+
+    if not is_super_admin(message.from_user.id):
+        return
+
+    daily_update()
+    return
+
+
+@bot.message_handler(commands=['weekly_update'])
+def mailing(message):
+
+    if not is_super_admin(message.from_user.id):
+        return
+
+    weekly_update()
+    return 
+
+
 def send_to_everyone(message, users):
 
     if message.content_type == 'text':
