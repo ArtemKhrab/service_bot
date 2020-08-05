@@ -673,18 +673,22 @@ def get_cur_day(master_id, cur_day):
 
 
 def daily_update():
-    orders = session.query(Order).filter(Working_days.day_num == calculations.get_current_day() - 1,
-                                         Order.next_week == '0',
-                                         Order.done == '0',
-                                         Order.canceled_by_client == '0',
-                                         Order.canceled_by_master == '0',
-                                         Order.canceled_by_system == '0').all()
-    session.query(Order).filter(Working_days.day_num == calculations.get_current_day() - 1,
-                                Order.done == '0',
-                                Order.canceled_by_client == '0',
-                                Order.canceled_by_master == '0',
-                                Order.canceled_by_system == '0'). \
-        update({Order.canceled_by_system: True}, synchronize_session=False)
+    try:
+        orders = session.query(Order).filter(Working_days.day_num == calculations.get_current_day() - 1,
+                                             Order.next_week == '0',
+                                             Order.done == '0',
+                                             Order.canceled_by_client == '0',
+                                             Order.canceled_by_master == '0',
+                                             Order.canceled_by_system == '0').all()
+        session.query(Order).filter(Working_days.day_num == calculations.get_current_day() - 1,
+                                    Order.done == '0',
+                                    Order.canceled_by_client == '0',
+                                    Order.canceled_by_master == '0',
+                                    Order.canceled_by_system == '0'). \
+            update({Order.canceled_by_system: True}, synchronize_session=False)
+    except Exception as ex:
+        print(ex)
+        return
     for item in orders:
         try:
             time_slots_managment.process_calendar_instance(delete=True, calendar_instance_id=item.g_calendar_id)
@@ -694,10 +698,13 @@ def daily_update():
 
 
 def weekly_update():
-    session.query(Order).filter(Order.next_week == '1'). \
-        update({Order.next_week: False}, synchronize_session=False)
-    session.commit()
-
+    try:
+        session.query(Order).filter(Order.next_week == '1'). \
+            update({Order.next_week: False}, synchronize_session=False)
+        session.commit()
+    except Exception as ex:
+        print(ex)
+        return
 
 def get_segments_for_master(master_id):
     services = session.query(Service_type.segment_id).filter(Service_type.master_id == master_id).all()
