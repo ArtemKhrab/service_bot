@@ -1263,7 +1263,7 @@ def take_brake(message, call):
     if not calculations.regex_time(message):
         bot.send_message(message.chat.id, 'Формат часу: 1-15 – це буде одна '
                                           'година, 15 хвилин.')
-        bot.register_next_step_handler(message, take_brake)
+        bot.register_next_step_handler(message, take_brake, call)
         return
 
     cur_day = calculations.get_current_day()
