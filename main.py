@@ -2166,6 +2166,7 @@ def start_schedule():
     while True:
         schedule.run_pending()
         time.sleep(1)
+        print(1)
 
 
 def start_bot():
@@ -2179,9 +2180,10 @@ def start_bot():
 
 
 if __name__ == '__main__':
-    schedule_process = Process(target=start_schedule)
+    schedule_process = Process(target=start_schedule, daemon=True)
     schedule_process.start()
     bot_process = Process(target=start_bot)
     bot_process.start()
-    schedule_process.join()
-    bot_process.join()
+
+    # schedule_process.join()
+    # bot_process.join()
