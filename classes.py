@@ -175,4 +175,14 @@ class Saved_masters(Base):
     master_id = Column(String(25), ForeignKey(Master.user_id))
 
 
+class Updates(Base):
+    __tablename__ = 'updates'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    daily = Column(Boolean, default=False)
+    weekly = Column(Boolean, default=False)
+    date = Column(DateTime, default=datetime.datetime.utcnow)
+    done = Column(Boolean, default=False)
+
+
 Base.metadata.create_all(engine)

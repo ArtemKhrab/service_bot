@@ -545,7 +545,7 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
                              money_cost=service[0].money_cost, next_week=(True if next_week == '1' else False),
                              self_res=True, description=description)
         session.add(instance)
-        session.flush()
+        session.commit()
         master = get_master(master_id)
         placement = get_placement_by_id(master[0].placement_id)
         day = get_day_details(day_id)
@@ -584,7 +584,6 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
                          money_cost=service[0].money_cost, next_week=(True if next_week == '1' else False))
         client = get_client(client_id)
     session.add(instance)
-    session.flush()
     session.commit()
     master = get_master(master_id)
     placement = get_placement_by_id(master[0].placement_id)
@@ -689,6 +688,7 @@ def daily_update():
             update({Order.canceled_by_system: True}, synchronize_session=False)
     except Exception as ex:
         print(ex)
+        create_update_log(done=False, daily=True)
         return
     for item in orders:
         try:
@@ -696,6 +696,7 @@ def daily_update():
         except Exception as ex:
             print(ex)
     session.commit()
+    create_update_log(done=True, daily=True)
 
 
 def weekly_update():
@@ -705,7 +706,9 @@ def weekly_update():
         session.commit()
     except Exception as ex:
         print(ex)
+        create_update_log(done=False, weekly=True)
         return
+    create_update_log(done=True, weekly=True)
 
 
 def get_segments_for_master(master_id):
@@ -765,3 +768,21 @@ def get_all_admins():
 def is_super_admin(user_id):
     user_instance = session.query(User_role.super_admin).filter(User_role.id == user_id)
     return user_instance[0].super_admin
+
+
+def create_update_log(done, daily=False, weekly=False):
+    try:
+        instance = Updates(daily=daily, weekly=weekly, done=done)
+        session.add(instance)
+        session.commit()
+    except Exception as ex:
+        print(ex)
+        return
+
+
+def get_last_update():
+    try:
+        return session.query(Updates).limit(1).all()
+    except Exception as ex:
+        print(ex)
+        return []

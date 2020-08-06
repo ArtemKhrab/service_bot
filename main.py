@@ -102,12 +102,26 @@ def w_update(message):
     return
 
 
+@bot.message_handler(commands=['get_last_update'])
+def get_update(message):
+    if not is_super_admin(message.from_user.id):
+        return
+    instance = get_last_update()
+    if instance is not None:
+        bot.send_message(message.from_user.id, f"Дата: {instance[0].date} \n"
+                                               f"Тип апдейту: {'daily'if instance[0].daily else 'weekly'} \n"
+                                               f"Виконано: {'Так' if instance[0].done else 'Ні'}")
+    else:
+        bot.send_message(message.from_user.id, "Не вдалося виконати запит...")
+
+
 @bot.message_handler(commands=['help'])
 def bot_help(message):
     if is_super_admin(message.from_user.id):
         bot.send_message(message.from_user.id,
                          "У Вас є права адміна.\n "
                          "Що Ви можете: \n"
+                         "/get_last_update - отримати інформацію про останній апдейт"
                          "/send_to_everyone - розсилка повідомлень всім, підтримуються лише текстові повідомленя та фотографії\n"
                          "/send_to_clients - розсилка повідомлень клієнтам, підтримуються лише текстові повідомленя та фотографії\n"
                          "/send_to_masters - розсилка повідомлень майстрам, підтримуються лише текстові повідомленя та фотографії\n"
