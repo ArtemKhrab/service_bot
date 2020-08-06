@@ -107,7 +107,7 @@ def get_update(message):
     if not is_super_admin(message.from_user.id):
         return
     instance = get_last_update()
-    if instance is not None:
+    if instance.__len__() > 1:
         bot.send_message(message.from_user.id, f"Дата: {instance[0].date} \n"
                                                f"Тип апдейту: {'daily'if instance[0].daily else 'weekly'} \n"
                                                f"Виконано: {'Так' if instance[0].done else 'Ні'}")
@@ -121,7 +121,7 @@ def bot_help(message):
         bot.send_message(message.from_user.id,
                          "У Вас є права адміна.\n "
                          "Що Ви можете: \n"
-                         "/get_last_update - отримати інформацію про останній апдейт"
+                         "/get_last_update - отримати інформацію про останній апдейт\n"
                          "/send_to_everyone - розсилка повідомлень всім, підтримуються лише текстові повідомленя та фотографії\n"
                          "/send_to_clients - розсилка повідомлень клієнтам, підтримуються лише текстові повідомленя та фотографії\n"
                          "/send_to_masters - розсилка повідомлень майстрам, підтримуються лише текстові повідомленя та фотографії\n"
