@@ -107,12 +107,14 @@ def get_update(message):
     if not is_super_admin(message.from_user.id):
         return
     instance = get_last_update()
-    if instance.__len__() > 1:
-        bot.send_message(message.from_user.id, f"Дата: {instance[0].date} \n"
-                                               f"Тип апдейту: {'daily'if instance[0].daily else 'weekly'} \n"
-                                               f"Виконано: {'Так' if instance[0].done else 'Ні'}")
-    else:
+    if instance.__len__() < 1:
         bot.send_message(message.from_user.id, "Не вдалося виконати запит...")
+        return
+    else:
+        bot.send_message(message.from_user.id, f"Дата: {instance[0].date} \n"
+                                               f"Тип апдейту: {'daily' if instance[0].daily else 'weekly'} \n"
+                                               f"Виконано: {'Так' if instance[0].done else 'Ні'}")
+        return
 
 
 @bot.message_handler(commands=['help'])
