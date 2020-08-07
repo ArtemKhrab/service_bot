@@ -782,7 +782,7 @@ def create_update_log(done, daily=False, weekly=False):
 
 def get_last_update():
     try:
-        return session.query(Updates).limit(1).all()
+        return session.query(Updates).order_by(desc(Updates.id)).limit(1).all()
     except Exception as ex:
         print(ex)
         return []

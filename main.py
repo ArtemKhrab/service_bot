@@ -21,7 +21,7 @@ except Exception as critical:
     bot.send_message(405423146, f'Не удалось выполнить дейли апдейт... {critical}')
 
 try:
-    schedule.every().monday.at('02:00').do(weekly_update)
+    schedule.every().monday.at('02:10').do(weekly_update)
 except Exception as critical:
     logging.critical(f'Could not execute weekly update. Cause {critical}')
     bot.send_message(405423146, f'Не удалось выполнить дейли апдейт... {critical}')
