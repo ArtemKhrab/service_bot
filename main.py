@@ -13,12 +13,23 @@ from multiprocessing import Process
 
 bot = telebot.TeleBot(token=token)
 data_path = os.curdir + '\\data\\'
+try:
+    schedule.every().day.at('01:59').do(daily_update)
+except Exception as exc:
+    print(exc)
+    time.sleep(5)
 
 try:
     schedule.every().day.at('02:00').do(daily_update)
 except Exception as critical:
     logging.critical(f'Could not execute daily update. Cause {critical}')
     bot.send_message(405423146, f'Не удалось выполнить дейли апдейт... {critical}')
+
+try:
+    schedule.every().monday.at('02:09').do(weekly_update)
+except Exception as exc:
+    print(exc)
+    time.sleep(5)
 
 try:
     schedule.every().monday.at('02:10').do(weekly_update)
@@ -73,8 +84,8 @@ def d_update(message):
         return
     try:
         daily_update()
-    except Exception as ex:
-        print(ex)
+    except Exception as e:
+        print(e)
         bot.send_message(message.from_user.id, 'Не проапдейтилось...')
         return
 
