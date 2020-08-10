@@ -6,7 +6,6 @@ from datetime import timedelta
 
 Base = declarative_base()
 
-time_now = datetime.datetime.utcnow() + timedelta(hours=utc)
 
 class City(Base):
     __tablename__ = 'city'
@@ -143,7 +142,7 @@ class Order(Base):
     master_id = Column(String(25), ForeignKey(Master.user_id))
     service_id = Column(Integer, ForeignKey(Service_type.id))
     day_id = Column(Integer, ForeignKey(Working_days.id))
-    order_date = Column(DateTime, default=time_now)
+    order_date = Column(DateTime, default=datetime.datetime.utcnow() + timedelta(hours=utc))
     time = Column(String(11))
     prepaid = Column(Boolean, default=False)
     done = Column(Boolean, default=False)
@@ -183,7 +182,7 @@ class Updates(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     daily = Column(Boolean, default=False)
     weekly = Column(Boolean, default=False)
-    date = Column(DateTime, default=time_now)
+    date = Column(DateTime, default=datetime.datetime.utcnow() + timedelta(hours=utc))
     done = Column(Boolean, default=False)
 
 
