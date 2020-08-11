@@ -30,7 +30,7 @@ def get_current_year():
 def get_date_by_day_number(day_num, next_week):
     today = get_current_day()
     day_diff = day_num - today
-    if next_week == '1' or next_week:
+    if next_week == '1' or next_week is True:
         return datetime.today() + timedelta(days=day_diff+7)
     else:
         return datetime.today() + timedelta(days=day_diff)
