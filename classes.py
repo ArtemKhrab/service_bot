@@ -187,4 +187,3 @@ class Updates(Base):
 
 
 Base.metadata.create_all(engine)
-
