@@ -20,7 +20,7 @@ data_path = os.curdir + '\\data\\'
 #     time.sleep(5)
 
 try:
-    schedule.every().day.at('02:00').do(daily_update)
+    schedule.every().day.at('00:00').do(daily_update)
 except Exception as critical:
     logging.critical(f'Could not execute daily update. Cause {critical}')
     bot.send_message(405423146, f'Не удалось выполнить дейли апдейт... {critical}')
@@ -32,7 +32,7 @@ except Exception as critical:
 #     time.sleep(5)
 
 try:
-    schedule.every().monday.at('02:10').do(weekly_update)
+    schedule.every().monday.at('00:10').do(weekly_update)
 except Exception as critical:
     logging.critical(f'Could not execute weekly update. Cause {critical}')
     bot.send_message(405423146, f'Не удалось выполнить дейли апдейт... {critical}')
