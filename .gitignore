@@ -5,7 +5,8 @@ token.pickle
 /.handler-saves
 /venv
 #data/dafault.jpeg
-.env
+..env
 /data/*/
 *.log
 !/data/done.jpg
+start_process.bat
