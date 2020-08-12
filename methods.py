@@ -532,7 +532,8 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
     time_item = datetime.now()
     service_time = time_item.replace(hour=int(time_slot_start[0]), minute=int(time_slot_start[1]))
     service_time = service_time + timedelta(hours=int(service_time_cost[0]), minutes=int(service_time_cost[1]))
-
+    day = get_day_details(day_id)
+    date = calculations.get_date_by_day_number(day[0].day_num, next_week).strftime("%Y-%m-%d")
     if self_res:
         if get_user_role(client_id):
             instance = Order(master_id=master_id, client_id_master_acc=client_id, day_id=day_id,
@@ -548,7 +549,7 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
         session.commit()
         master = get_master(master_id)
         placement = get_placement_by_id(master[0].placement_id)
-        day = get_day_details(day_id)
+
         try:
             g_event_id = \
                 time_slots_managment.process_calendar_instance(title=service[0].name,
@@ -576,18 +577,19 @@ def create_order(master_id, client_id, day_id, time_slot, service_id, next_week,
     if get_user_role(client_id):
         instance = Order(master_id=master_id, client_id_master_acc=client_id, day_id=day_id,
                          time=time_slot + f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
-                         money_cost=service[0].money_cost, next_week=(True if next_week == '1' else False))
+                         money_cost=service[0].money_cost, next_week=(True if next_week == '1' else False),
+                         order_date=date)
         client = get_master(client_id)
     else:
         instance = Order(master_id=master_id, client_id=client_id, day_id=day_id,
                          time=time_slot + f'-{str(service_time.strftime("%H-%M"))}', service_id=service_id,
-                         money_cost=service[0].money_cost, next_week=(True if next_week == '1' else False))
+                         money_cost=service[0].money_cost, next_week=(True if next_week == '1' else False),
+                         order_date=date)
         client = get_client(client_id)
     session.add(instance)
     session.commit()
     master = get_master(master_id)
     placement = get_placement_by_id(master[0].placement_id)
-    day = get_day_details(day_id)
     try:
         g_event_id = \
             time_slots_managment.process_calendar_instance(title=service[0].name,
@@ -674,20 +676,21 @@ def get_cur_day(master_id, cur_day):
 
 def daily_update():
     try:
-        orders = session.query(Order).filter(Working_days.day_num == calculations.get_current_day() - 1,
-                                             Order.next_week == '0',
-                                             Order.done == '0',
-                                             Order.canceled_by_client == '0',
-                                             Order.canceled_by_master == '0',
-                                             Order.canceled_by_system == '0').all()
-        session.query(Order).filter(Working_days.day_num == calculations.get_current_day() - 1,
-                                    Order.done == '0',
-                                    Order.canceled_by_client == '0',
-                                    Order.canceled_by_master == '0',
-                                    Order.canceled_by_system == '0'). \
+        orders = session.query(Order).join(Working_days).filter(Working_days.day_num <= calculations.get_current_day()-1,
+                                                                Order.next_week == '0',
+                                                                Order.done == '0',
+                                                                Order.canceled_by_client == '0',
+                                                                Order.canceled_by_master == '0',
+                                                                Order.canceled_by_system == '0').all()
+        order_ids = []
+        for order in orders:
+            order_ids.append(order.id)
+        session.query(Order).filter(Order.id.in_(order_ids)). \
             update({Order.canceled_by_system: True}, synchronize_session=False)
+
     except Exception as ex:
         print(ex)
+        session.rollback()
         create_update_log(done=False, daily=True)
         return
     for item in orders:
@@ -706,6 +709,7 @@ def weekly_update():
         session.commit()
     except Exception as ex:
         print(ex)
+        session.rollback()
         create_update_log(done=False, weekly=True)
         return
     create_update_log(done=True, weekly=True)

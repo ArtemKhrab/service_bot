@@ -19,11 +19,9 @@ data_path = os.curdir + '\\data\\'
 #     print(exc)
 #     time.sleep(5)
 
-try:
-    schedule.every().day.at('00:00').do(daily_update)
-except Exception as critical:
-    logging.critical(f'Could not execute daily update. Cause {critical}')
-    bot.send_message(405423146, f'Не удалось выполнить дейли апдейт... {critical}')
+
+schedule.every().day.at('01:00').do(daily_update)
+
 
 # try:
 #     schedule.every().monday.at('02:09').do(weekly_update)
@@ -31,12 +29,7 @@ except Exception as critical:
 #     print(exc)
 #     time.sleep(5)
 
-try:
-    schedule.every().monday.at('00:10').do(weekly_update)
-except Exception as critical:
-    logging.critical(f'Could not execute weekly update. Cause {critical}')
-    bot.send_message(405423146, f'Не удалось выполнить дейли апдейт... {critical}')
-
+schedule.every().monday.at('01:10').do(weekly_update)
 
 @bot.message_handler(commands=['send_to_everyone'])
 def mailing(message):
@@ -1748,7 +1741,7 @@ def set_money_cost(message, service_id, segment, reg='1'):
 
 
 def set_email(message, role, reg):
-    if not re.match(r'^[a-z0-9A-Z]+[._]?[a-z0-9A-Z]+[@]\w+[.]\w{2,3}$', message.text):
+    if not re.match(r'^[a-z0-9A-Z._]+[@]\w+[.]\w{2,3}$', message.text):
         bot.send_message(message.chat.id, "Невірний формат електронної адреси")
         bot.send_message(message.chat.id, "Спробуйте ще раз!")
         bot.register_next_step_handler(message, set_email, role, reg)
@@ -1853,7 +1846,7 @@ def show_orders(orders, user_id, master_flag, call):
                                  f'Назва послуги: {str(service[0].name)} \n'
                                  f'Початок о: {start_time[0]}-{start_time[1]}  \n'
                                  f'День тижня: {day[0].day_name} \n'
-                                 f'Дата: {date} \n'
+                                 f'Дата: {order.order_date} \n'
                                  f"Ім'я майстра:  {str(master[0].name)} \n"
                                  f"Телефон майстра: {str(master[0].telephone)} \n"
                                  f"Опис: {order.description} {canceled}",

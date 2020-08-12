@@ -142,7 +142,7 @@ class Order(Base):
     master_id = Column(String(25), ForeignKey(Master.user_id))
     service_id = Column(Integer, ForeignKey(Service_type.id))
     day_id = Column(Integer, ForeignKey(Working_days.id))
-    order_date = Column(DateTime, default=datetime.datetime.utcnow() + timedelta(hours=utc))
+    order_date = Column(Date)
     time = Column(String(11))
     prepaid = Column(Boolean, default=False)
     done = Column(Boolean, default=False)
@@ -182,7 +182,7 @@ class Updates(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     daily = Column(Boolean, default=False)
     weekly = Column(Boolean, default=False)
-    date = Column(DateTime, default=datetime.datetime.utcnow() + timedelta(hours=utc))
+    date = Column(DateTime, default=datetime.datetime.utcnow())
     done = Column(Boolean, default=False)
 
 
