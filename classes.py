@@ -182,7 +182,7 @@ class Updates(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     daily = Column(Boolean, default=False)
     weekly = Column(Boolean, default=False)
-    date = Column(DateTime, default=datetime.datetime.utcnow())
+    date = Column(DateTime, default=datetime.datetime.utcnow()+timedelta(hours=utc))
     done = Column(Boolean, default=False)
 
 
