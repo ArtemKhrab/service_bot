@@ -241,6 +241,7 @@ def menu(message):
     try:
         flag = check_user(message.from_user.id)
     except Exception as ex:
+        session.rollback()
         logging.error(f'Could not check user. Cause: {ex}. Time: {time.asctime()}')
         return
     if not flag:
@@ -256,6 +257,7 @@ def callback_handler(call):
     try:
         flag = check_user(call.from_user.id)
     except Exception as ex:
+        session.rollback()
         logging.error(f'Could not check user. Cause: {ex}. Time: {time.asctime()}')
         return
 
