@@ -19,10 +19,17 @@ data_path = os.curdir + '\\data\\'
 #     print(exc)
 #     time.sleep(5)
 
+@bot.message_handler(commands=['1'])
+def test(message):
+    if not is_super_admin(message.from_user.id):
+        return
+    try:
+        schedule.every().day.at(message.text).do(daily_update)
+    except Exception as ex:
+        print(ex)
+
 
 schedule.every().day.at('01:00').do(daily_update)
-
-
 # try:
 #     schedule.every().monday.at('02:09').do(weekly_update)
 # except Exception as exc:

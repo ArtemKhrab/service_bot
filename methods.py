@@ -776,7 +776,7 @@ def is_super_admin(user_id):
 
 def create_update_log(done, daily=False, weekly=False):
     try:
-        instance = Updates(daily=daily, weekly=weekly, done=done, date=datetime.utcnow()+timedelta(hours=utc))
+        instance = Updates(daily=daily, weekly=weekly, done=done, date=datetime.utcnow()) #+timedelta(hours=utc)
         session.add(instance)
         session.commit()
     except Exception as ex:
