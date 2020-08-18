@@ -20,7 +20,7 @@ data_path = os.curdir + '\\data\\'
 #     time.sleep(5)
 
 
-schedule.every().day.at('11:30').do(daily_update)
+schedule.every().day.at('01:00').do(daily_update)
 # try:
 #     schedule.every().monday.at('02:09').do(weekly_update)
 # except Exception as exc:
